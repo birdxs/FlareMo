@@ -31,7 +31,7 @@
     {
       "binding": "DB",
       "database_name": "flaremo",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "92e36822-c906-4d2c-8f86-78fc50aa0c02",
       "migrations_dir": "./migrations"
     }
   ],
@@ -89,11 +89,11 @@
     "crons": ["17 3 * * *"]
   },
   "vars": {
-    "FLAREMO_DEPLOY_REPOSITORY": "",
+    "FLAREMO_DEPLOY_REPOSITORY": "https://github.com/birdxs/FlareMo",
     "FLAREMO_SINGLE_USER_EMAIL": "owner@flaremo.local",
     "FLAREMO_SINGLE_USER_NAME": "FlareMo Owner",
-    "FLAREMO_PUBLIC_URL": "https://flaremo.example.workers.dev",
-    "FLAREMO_TRUSTED_ORIGINS": "",
+    "FLAREMO_PUBLIC_URL": "https://flaremo.birdxs.eu.org",
+    "FLAREMO_TRUSTED_ORIGINS": "https://flaremo.birdxs.eu.org,https://flaremo.birdxs.workers.dev",
     "FLAREMO_EMBEDDING_PROVIDER": "workers-ai",
     "FLAREMO_EMBEDDING_MODEL": "@cf/qwen/qwen3-embedding-0.6b",
     "FLAREMO_EMBEDDING_DIMENSIONS": "1024",
