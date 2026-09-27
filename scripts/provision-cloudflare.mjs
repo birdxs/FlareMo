@@ -409,19 +409,60 @@ async function fetchWorkersSubdomain(accountId, token) {
 }
 
 function parseJsonOutput(output) {
-  const start = output.indexOf("[");
-  const objectStart = output.indexOf("{");
-  const jsonStart =
-    start === -1
-      ? objectStart
-      : objectStart === -1
-        ? start
-        : Math.min(start, objectStart);
-  if (jsonStart === -1) return [];
-  const parsed = JSON.parse(output.slice(jsonStart));
-  return Array.isArray(parsed)
-    ? parsed
-    : (parsed?.indexes ?? parsed?.result ?? parsed?.databases ?? []);
+  // Skip pnpm/wrangler header noise and ANSI escape codes, then extract the
+  // top-level JSON array or object. wrangler outputs like:
+  //   <pnpm noise>\n[\n  { ... }\n]\n<ANSI warning text>
+  const stripAnsi = (s) => s.replace(/\x1b\[[0-9;]*m/g, "");
+  const clean = stripAnsi(output);
+
+  // Find the first line that is exactly "[" or "{" (the JSON start)
+  const lines = clean.split("\n");
+  let startLine = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (trimmed === "[" || trimmed === "{") {
+      startLine = i;
+      break;
+    }
+  }
+  if (startLine === -1) return [];
+
+  // Rebuild from the JSON start and find the matching close bracket,
+  // tracking depth while respecting strings.
+  const open = lines[startLine].trim()[0];
+  const close = open === "[" ? "]" : "}";
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  let endIdx = -1;
+
+  for (let i = startLine; i < lines.length && endIdx === -1; i++) {
+    const line = lines[i];
+    for (let j = 0; j < line.length; j++) {
+      const ch = line[j];
+      if (escape) { escape = false; continue; }
+      if (ch === "\\") { escape = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === open) depth++;
+      else if (ch === close) {
+        depth--;
+        if (depth === 0) { endIdx = j; break; }
+      }
+    }
+    if (endIdx !== -1) {
+      // Build the exact JSON substring
+      const subLines = lines.slice(startLine, i + 1);
+      const jsonStr = subLines.map((l, k) =>
+        k === subLines.length - 1 ? l.slice(0, endIdx + 1) : l
+      ).join("\n");
+      const parsed = JSON.parse(jsonStr);
+      return Array.isArray(parsed)
+        ? parsed
+        : (parsed?.indexes ?? parsed?.result ?? parsed?.databases ?? []);
+    }
+  }
+  return [];
 }
 
 export function listedResourceExists(output, name) {
