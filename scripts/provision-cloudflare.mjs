@@ -412,7 +412,8 @@ function parseJsonOutput(output) {
   // Skip pnpm/wrangler header noise and ANSI escape codes, then extract the
   // top-level JSON array or object. wrangler outputs like:
   //   <pnpm noise>\n[\n  { ... }\n]\n<ANSI warning text>
-  const stripAnsi = (s) => s.replace(/\x1b\[[0-9;]*m/g, "");
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: needed for ANSI escape codes
+  const stripAnsi = (s) => s.replace(/\u001b\[[0-9;]*m/g, "");
   const clean = stripAnsi(output);
 
   // Find the first line that is exactly "[" or "{" (the JSON start)
@@ -433,29 +434,41 @@ function parseJsonOutput(output) {
   const close = open === "[" ? "]" : "}";
   let depth = 0;
   let inString = false;
-  let escape = false;
+  let inEscape = false;
   let endIdx = -1;
 
   for (let i = startLine; i < lines.length && endIdx === -1; i++) {
     const line = lines[i];
     for (let j = 0; j < line.length; j++) {
       const ch = line[j];
-      if (escape) { escape = false; continue; }
-      if (ch === "\\") { escape = true; continue; }
-      if (ch === '"') { inString = !inString; continue; }
+      if (inEscape) {
+        inEscape = false;
+        continue;
+      }
+      if (ch === "\\") {
+        inEscape = true;
+        continue;
+      }
+      if (ch === '"') {
+        inString = !inString;
+        continue;
+      }
       if (inString) continue;
       if (ch === open) depth++;
       else if (ch === close) {
         depth--;
-        if (depth === 0) { endIdx = j; break; }
+        if (depth === 0) {
+          endIdx = j;
+          break;
+        }
       }
     }
     if (endIdx !== -1) {
       // Build the exact JSON substring
       const subLines = lines.slice(startLine, i + 1);
-      const jsonStr = subLines.map((l, k) =>
-        k === subLines.length - 1 ? l.slice(0, endIdx + 1) : l
-      ).join("\n");
+      const jsonStr = subLines
+        .map((l, k) => (k === subLines.length - 1 ? l.slice(0, endIdx + 1) : l))
+        .join("\n");
       const parsed = JSON.parse(jsonStr);
       return Array.isArray(parsed)
         ? parsed
