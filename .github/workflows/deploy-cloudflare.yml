@@ -1,9 +1,13 @@
-# 自托管 fork 的手动生产部署。只响应 workflow_dispatch，不在 push 时发布。
+# 自托管 fork 的自动生产部署。push 到 main 时自动触发（含 flaremo-update merge），
+# 也保留 manual trigger 用于紧急修复或 dry-run。
 # 上游仓库 realchendahuang/FlareMo 不会跑这个 job。
 # 真正执行的仍是仓库里的 `pnpm deploy`：构建前端、远端 D1 migration、再 wrangler deploy。
 name: Deploy to Cloudflare
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       dry_run:
