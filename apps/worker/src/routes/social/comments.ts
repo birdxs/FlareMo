@@ -74,6 +74,7 @@ export function registerCommentRoutes(app: Hono<HonoBindings>) {
           payload: memoPayload(comment),
           ...(commentId ? { commentId } : {}),
         },
+        { userLimits: context.userLimits },
       );
       return c.json(await memoToCurrentDto(context, created, memoName));
     } catch (error) {

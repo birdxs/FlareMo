@@ -1,6 +1,6 @@
 import { getPublicShareByToken, listMemoReactions } from "@flaremo/domain";
 import { currentMemoToDto } from "@flaremo/memos";
-import { getFlareMoRuntime } from "../../../context";
+import { getFlareMoDb } from "../../../context";
 import type { BinaryTransport } from "../../../memos-protobuf";
 import { type ConnectContext, record, requiredString } from "../shared";
 import { connectValue } from "../transport";
@@ -11,7 +11,7 @@ export async function connectGetSharedMemo(
   transport?: BinaryTransport,
 ) {
   const body = record(value);
-  const db = getFlareMoRuntime(c.env).db;
+  const db = getFlareMoDb(c.env);
   const shared = await getPublicShareByToken(
     db,
     requiredString(body.shareId ?? body.shareToken, "shareId"),

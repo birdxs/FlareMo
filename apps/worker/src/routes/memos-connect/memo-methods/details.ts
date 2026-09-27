@@ -1,25 +1,56 @@
 import type { MemoRow, UserRow } from "@flaremo/db";
 import {
   getMemoById,
-  getMemoByIdForViewer,
   getMemoParent,
+  getMemoParentsForViewer,
+  getMemosByIdsForViewer,
   listAttachmentsForMemosForViewer,
   listMemoAttachments,
   listMemoReactions,
+  listMemoRelationsForMemosForViewer,
   listMemoRelationsForViewer,
   listReactionsForMemosForViewer,
+  NotFoundError,
 } from "@flaremo/domain";
 import { currentMemoToDto } from "@flaremo/memos";
 import type { getRequestContext } from "../../../context";
 import { CompatValidationError } from "../../../memos-compat/errors";
 import { resolveMemoCreator } from "../../../memos-compat/memo-creator";
-import { memoRelationsToDtos } from "../../../memos-compat/memo-relations";
+import {
+  memoRelationsToDtos,
+  type RelationRow,
+} from "../../../memos-compat/memo-relations";
 import {
   parseMemosOrderBy,
   parseMemosState,
 } from "../../../memos-compat/parsing";
 import { normalizeMemoName } from "../../../memos-compat/resource-names";
 import { type ConnectReadContext, optionalString, pageSize } from "../shared";
+
+/**
+ * Build a map-backed fetcher for {@link memoRelationsToDtos}: the endpoints of
+ * every relation on the page are read in one query, and a missing id throws
+ * the same NotFoundError the per-relation helper would have raised. Pass
+ * `includeDeleted` where the single-id path did; the public read passes it
+ * false, so trashed endpoints stay hidden there.
+ */
+async function relationMemoFetcher(
+  context: Pick<ConnectReadContext, "db" | "user">,
+  rows: readonly RelationRow[],
+  options: { includeDeleted?: boolean } = {},
+) {
+  const memosById = await getMemosByIdsForViewer(
+    context.db,
+    context.user,
+    [...new Set(rows.flatMap((row) => [row.memoId, row.relatedMemoId]))],
+    options,
+  );
+  return async (id: string) => {
+    const memo = memosById.get(id);
+    if (!memo) throw new NotFoundError("Memo not found");
+    return memo;
+  };
+}
 
 /**
  * Shared body-to-legacy-list-query mapping for the authenticated
@@ -63,8 +94,9 @@ export async function connectMemoWithDetails(
     }),
     getMemoParent(context.db, context.user, memo.id),
   ]);
-  const relations = await memoRelationsToDtos(rows, (id) =>
-    getMemoById(context.db, context.user, id, { includeDeleted: true }),
+  const relations = await memoRelationsToDtos(
+    rows,
+    await relationMemoFetcher(context, rows, { includeDeleted: true }),
   );
   return currentMemoToDto(memo, context.user, {
     attachments,
@@ -115,35 +147,36 @@ export async function listMemoReactionsForPage(
 
 /**
  * Hydrate a page of already-scoped memo rows without re-fetching each memo:
- * attachments and reactions are resolved with one batched query per page,
- * while relations and the comment parent stay per-memo because most memos
- * carry none. Keeps the exact DTO shape of the former per-memo detail fetch.
+ * attachments, reactions, relations and comment parents are each resolved with
+ * a bounded number of batched queries per page instead of per row. Keeps the
+ * exact DTO shape of the former per-memo detail fetch.
  */
 export async function hydrateConnectMemos(
   context: Awaited<ReturnType<typeof getRequestContext>>,
   memoRows: MemoRow[],
 ) {
   const ids = memoRows.map((memo) => memo.id);
-  const [attachments, reactions] = await Promise.all([
+  const [attachments, reactions, relationsByMemo, parents] = await Promise.all([
     listMemoAttachmentsForPage(context, ids),
     listMemoReactionsForPage(context, ids),
+    listMemoRelationsForMemosForViewer(context.db, context.user, ids),
+    getMemoParentsForViewer(context.db, context.user, ids),
   ]);
+  const relationRows = [...relationsByMemo.values()].flat();
+  const fetchRelationMemo = await relationMemoFetcher(context, relationRows, {
+    includeDeleted: true,
+  });
   return Promise.all(
     memoRows.map(async (memo) => {
-      const relationRows = await listMemoRelationsForViewer(
-        context.db,
-        context.user,
-        memo.id,
+      const relations = await memoRelationsToDtos(
+        relationsByMemo.get(memo.id) ?? [],
+        fetchRelationMemo,
       );
-      const relations = await memoRelationsToDtos(relationRows, (id) =>
-        getMemoById(context.db, context.user, id, { includeDeleted: true }),
-      );
-      const parent = await getMemoParent(context.db, context.user, memo.id);
       return currentMemoToDto(memo, context.user, {
         attachments: attachments.get(memo.id) ?? [],
         reactions: reactions.get(memo.id) ?? [],
         relations,
-        parent,
+        parent: parents.get(memo.id),
       });
     }),
   );
@@ -151,8 +184,8 @@ export async function hydrateConnectMemos(
 
 /**
  * Anonymous-capable variant for the public Memos read surface, mirroring
- * connectPublicMemoWithDetails but resolving a page in two batched queries
- * plus per-memo relation lookups, with creators cached across the page.
+ * connectMemoWithDetails but resolving a page with batched attachment,
+ * reaction, relation and endpoint reads, with creators cached across the page.
  */
 export async function hydrateConnectPublicMemos(
   context: ConnectReadContext,
@@ -160,10 +193,12 @@ export async function hydrateConnectPublicMemos(
   parent?: string,
 ) {
   const ids = memoRows.map((memo) => memo.id);
-  const [attachmentsByMemo, reactionsByMemo] = await Promise.all([
-    listAttachmentsForMemosForViewer(context.db, context.user, ids),
-    listReactionsForMemosForViewer(context.db, context.user, ids),
-  ]);
+  const [attachmentsByMemo, reactionsByMemo, relationsByMemo] =
+    await Promise.all([
+      listAttachmentsForMemosForViewer(context.db, context.user, ids),
+      listReactionsForMemosForViewer(context.db, context.user, ids),
+      listMemoRelationsForMemosForViewer(context.db, context.user, ids),
+    ]);
   const attachments = groupByContentMemo(
     attachmentsByMemo,
     (attachment) => attachment.memoId,
@@ -172,17 +207,16 @@ export async function hydrateConnectPublicMemos(
     reactionsByMemo,
     (reaction) => reaction.contentId,
   );
+  const fetchRelationMemo = await relationMemoFetcher(
+    context,
+    [...relationsByMemo.values()].flat(),
+  );
   const creators = new Map<string, UserRow>();
   return Promise.all(
     memoRows.map(async (memo) => {
-      const relationRows = await listMemoRelationsForViewer(
-        context.db,
-        context.user,
-        memo.id,
-      );
       const relations = await memoRelationsToDtos(
-        relationRows,
-        (id) => getMemoByIdForViewer(context.db, context.user, id),
+        relationsByMemo.get(memo.id) ?? [],
+        fetchRelationMemo,
         { skipUnavailable: true },
       );
       let creator = creators.get(memo.userId);

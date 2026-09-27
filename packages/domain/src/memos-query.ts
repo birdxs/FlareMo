@@ -87,14 +87,26 @@ export function createDateKeyFormatter(timeZone: string) {
   };
 }
 
-export function buildActivity(todayKey: string, counts: Map<string, number>) {
+/**
+ * The trailing `days`-long window of local dates ending on `todayKey`, each
+ * paired with its memo count (0 when absent).
+ *
+ * `days` is a parameter rather than the hardcoded 84 the heatmap used to
+ * assume: the year view needs 366, and a client that only renders a month
+ * should not pay for a year. Callers clamp it at the contract boundary.
+ */
+export function buildActivity(
+  todayKey: string,
+  counts: Map<string, number>,
+  days = 84,
+) {
   const today = new Date(`${todayKey}T00:00:00Z`);
-  const days: Array<{ count: number; date: string }> = [];
-  for (let offset = 83; offset >= 0; offset -= 1) {
+  const result: Array<{ count: number; date: string }> = [];
+  for (let offset = days - 1; offset >= 0; offset -= 1) {
     const date = new Date(today);
     date.setUTCDate(today.getUTCDate() - offset);
     const key = date.toISOString().slice(0, 10);
-    days.push({ count: counts.get(key) ?? 0, date: key });
+    result.push({ count: counts.get(key) ?? 0, date: key });
   }
-  return days;
+  return result;
 }

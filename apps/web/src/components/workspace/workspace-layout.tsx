@@ -7,6 +7,7 @@ import {
   Suspense,
   type UIEvent,
   useCallback,
+  useMemo,
   useState,
 } from "react";
 import {
@@ -22,6 +23,8 @@ import {
 import { useDataTransfer } from "@/hooks/use-data-transfer";
 import { useMemoMutations } from "@/hooks/use-memo-mutations";
 import { queryKeys } from "@/lib/query-keys";
+import { ACTIVITY_WINDOW_DAYS } from "@/lib/time-horizon";
+import { TIMELINE_SEARCH } from "@/lib/timeline-search";
 import { cn } from "@/lib/utils";
 
 const AccountSettingsDialog = lazy(() =>
@@ -31,15 +34,6 @@ const AccountSettingsDialog = lazy(() =>
 );
 
 const SIDEBAR_COLLAPSED_KEY = "flaremo.sidebar.collapsed";
-
-const TIMELINE_SEARCH = {
-  view: undefined,
-  space: undefined,
-  q: undefined,
-  tag: undefined,
-  untagged: undefined,
-  compose: undefined,
-};
 
 const EMPTY_STATS: MemoStatsResponse = {
   counts: { normal: 0, archived: 0, trashed: 0, total: 0 },
@@ -111,8 +105,11 @@ export function WorkspaceLayout({
   });
 
   const statsQuery = useQuery({
-    queryKey: ["memo-stats", "all", timeZone],
-    queryFn: () => getMemoStats(timeZone, "all"),
+    // Shares the key with the explorer's stats query so the page issues one
+    // request. Both must name the same window or React Query would treat them
+    // as two entries and fetch the stats twice.
+    queryKey: ["memo-stats", "all", timeZone, ACTIVITY_WINDOW_DAYS],
+    queryFn: () => getMemoStats(timeZone, "all", ACTIVITY_WINDOW_DAYS),
     staleTime: 30_000,
   });
 
@@ -130,32 +127,47 @@ export function WorkspaceLayout({
 
   const stats: MemoStatsResponse = statsQuery.data ?? EMPTY_STATS;
 
-  const sidebarContent: WorkspaceSidebarContent = {
-    hierarchy: tagHierarchyQuery.data?.tags ?? [],
-    hierarchyPending: tagHierarchyQuery.isPending,
+  const sidebarContent: WorkspaceSidebarContent = useMemo(() => {
+    const deleteTag = deleteTagMutation.mutate;
+    const renameTag = renameTagMutation.mutate;
+    return {
+      hierarchy: tagHierarchyQuery.data?.tags ?? [],
+      hierarchyPending: tagHierarchyQuery.isPending,
+      stats,
+      untagged: false,
+      user: currentUserQuery.data,
+      onDeleteTag: (tag) => deleteTag(tag),
+      onExport: handleExport,
+      onImportFile: handleImportFile,
+      onOpenSettings: () => setAccountSettingsOpen(true),
+      onRenameTag: (from, to) => renameTag({ from, to }),
+      // Tag filters live on the timeline; from any other workspace page a tag
+      // click jumps there with the filter applied instead of doing nothing.
+      onTagChange: (tag) => {
+        setMobileSheetOpen(false);
+        void navigate({ to: "/", search: { ...TIMELINE_SEARCH, tag } });
+      },
+      onToggleCollapsed: toggleSidebarCollapsed,
+      onUntaggedChange: (next) => {
+        setMobileSheetOpen(false);
+        void navigate({
+          to: "/",
+          search: { ...TIMELINE_SEARCH, untagged: next || undefined },
+        });
+      },
+    };
+  }, [
+    tagHierarchyQuery.data,
+    tagHierarchyQuery.isPending,
     stats,
-    untagged: false,
-    user: currentUserQuery.data,
-    onDeleteTag: (tag) => deleteTagMutation.mutate(tag),
-    onExport: handleExport,
-    onImportFile: handleImportFile,
-    onOpenSettings: () => setAccountSettingsOpen(true),
-    onRenameTag: (from, to) => renameTagMutation.mutate({ from, to }),
-    // Tag filters live on the timeline; from any other workspace page a tag
-    // click jumps there with the filter applied instead of doing nothing.
-    onTagChange: (tag) => {
-      setMobileSheetOpen(false);
-      void navigate({ to: "/", search: { ...TIMELINE_SEARCH, tag } });
-    },
-    onToggleCollapsed: toggleSidebarCollapsed,
-    onUntaggedChange: (next) => {
-      setMobileSheetOpen(false);
-      void navigate({
-        to: "/",
-        search: { ...TIMELINE_SEARCH, untagged: next || undefined },
-      });
-    },
-  };
+    currentUserQuery.data,
+    deleteTagMutation.mutate,
+    renameTagMutation.mutate,
+    handleExport,
+    handleImportFile,
+    navigate,
+    toggleSidebarCollapsed,
+  ]);
 
   return (
     <div className="h-svh overflow-hidden bg-background">

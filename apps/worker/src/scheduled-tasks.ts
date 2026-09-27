@@ -25,9 +25,11 @@ import {
   type PlanLimits,
   type PushKeys,
   parseUserPlanLimits,
+  pruneEmptyHourlyCountRows,
   pruneMemosSseEvents,
   purgeArticleRow,
   pushNotificationToUser,
+  recalibrateAllHourlyCounts,
   requeueStaleMemberRemovalJobs,
   runMemoryLedgerMaintenance,
   SELF_HOST_UNLIMITED,
@@ -273,6 +275,15 @@ export async function runScheduledMaintenance(
       cursor = listing.truncated ? listing.cursor : undefined;
     } while (cursor);
   }
+  // Rebuild the derived memo activity counter. Every memo write adjusts it
+  // inside the same batch, so this pass exists only to heal drift: a
+  // half-applied import, a counter statement that lost a race, or a row written
+  // by an older release before the table existed. It is the authority the
+  // incremental path is an optimization for, and it runs last so anything the
+  // steps above changed is already reflected in `memos`.
+  await recalibrateAllHourlyCounts(db, new Date().toISOString());
+  await pruneEmptyHourlyCountRows(db);
+
   // Daily review reach-out: file one idempotent inbox row per user when the
   // UTC calendar day has "on this day" history. The source-event unique
   // index absorbs cron retries, so a repeat run for the same date is a no-op.

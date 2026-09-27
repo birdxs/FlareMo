@@ -18,6 +18,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { TIMELINE_SEARCH } from "@/lib/timeline-search";
 import { cn } from "@/lib/utils";
 import { SettingsRow, SettingsSectionGroup } from "./account/apple-settings-ui";
 import {
@@ -347,6 +348,7 @@ export function AccountSettingsDialog({
               variant="ghost"
               size="icon-sm"
               onClick={onClose}
+              aria-label={t("common.close")}
               className="size-7 rounded-md text-muted-foreground hover:text-foreground"
             >
               <XIcon className="size-4" />
@@ -391,14 +393,7 @@ export function AccountPage() {
       open
       onClose={() =>
         void navigate({
-          search: {
-            compose: undefined,
-            q: undefined,
-            space: undefined,
-            tag: undefined,
-            untagged: undefined,
-            view: undefined,
-          },
+          search: { ...TIMELINE_SEARCH },
           to: "/",
         })
       }

@@ -18,6 +18,7 @@ import {
 } from "@flaremo/db";
 import { and, eq, inArray } from "drizzle-orm";
 import { createResourceId, createToken, parseResourceName } from "../ids";
+import { recalibrateUserHourlyCounts } from "../memo-hourly-counts";
 import {
   normalizeMemoClientId,
   normalizeMemoPayload,
@@ -653,6 +654,19 @@ export async function importData(
         offset + IMPORT_INSERT_BATCH,
       ) as unknown as Parameters<FlareMoDb["batch"]>[0],
     );
+  }
+
+  // The activity counter is rebuilt for the importing user in one pass.
+  //
+  // This import writes `memos` directly and rewrites `created_at` on the
+  // overwrite branch, so it moves memos between UTC hour buckets without
+  // passing through the incremental counter statements that createMemo and
+  // updateMemo emit. Recomputing once is also far cheaper than the alternative:
+  // a bundle may carry 50k memos, and a per-memo adjustment would be 50k extra
+  // statements. Backfilling history is exactly the workload that made the
+  // heatmap expensive in the first place, so it has to leave the counter right.
+  if (importedMemos > 0 || overwrittenMemos > 0) {
+    await recalibrateUserHourlyCounts(db, user.id, now);
   }
 
   return {

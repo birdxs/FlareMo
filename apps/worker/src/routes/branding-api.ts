@@ -4,7 +4,7 @@ import {
   getBranding,
 } from "@flaremo/domain";
 import { Hono } from "hono";
-import { getFlareMoRuntime, type HonoBindings } from "../context";
+import { getFlareMoDb, type HonoBindings } from "../context";
 import { jsonError } from "../http";
 
 /**
@@ -18,7 +18,7 @@ const MARK_CACHE_CONTROL = "public, max-age=300";
 
 brandingApi.get("/", async (c) => {
   try {
-    const db = getFlareMoRuntime(c.env).db;
+    const db = getFlareMoDb(c.env);
     const branding = await getBranding(db);
     const markUrl = (
       variant: BrandingMarkVariant,
@@ -46,7 +46,7 @@ brandingApi.get("/", async (c) => {
 for (const variant of ["light", "dark"] as const) {
   brandingApi.get(`/marks/${variant}`, async (c) => {
     try {
-      const db = getFlareMoRuntime(c.env).db;
+      const db = getFlareMoDb(c.env);
       const branding = await getBranding(db);
       const mark = branding.marks[variant];
       if (!mark) {
@@ -76,7 +76,7 @@ for (const variant of ["light", "dark"] as const) {
 
 brandingApi.get("/favicon", async (c) => {
   try {
-    const db = getFlareMoRuntime(c.env).db;
+    const db = getFlareMoDb(c.env);
     const branding = await getBranding(db);
     const favicon = branding.favicon;
     if (!favicon) {

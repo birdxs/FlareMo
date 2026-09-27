@@ -9,8 +9,11 @@ import {
 } from "@flaremo/domain";
 import type { Hono } from "hono";
 import { cleanupFlaremoArtifacts } from "../../artifact-cleanup";
-import { createFlareMoAuth } from "../../auth";
-import { getRequestContext, type HonoBindings } from "../../context";
+import {
+  getRequestContext,
+  type HonoBindings,
+  loadAuthFactory,
+} from "../../context";
 import { getFlaremoUserCached } from "../../identity-cache";
 import { currentJsonError } from "../../memos-compat/current-errors";
 import { registerCompatMember } from "../../memos-compat/member-service";
@@ -104,6 +107,7 @@ export function registerUserRoutes(app: Hono<HonoBindings>) {
       assertSessionCredential(context);
       assertCurrentUserPath(c.req.param("user"), context.user.id);
       const body = currentPatBodySchema.parse(await readCurrentJsonObject(c));
+      const { createFlareMoAuth } = await loadAuthFactory();
       const auth = createFlareMoAuth(c.env, context.db);
       const created = await auth.api.createApiKey({
         body: {
@@ -142,6 +146,7 @@ export function registerUserRoutes(app: Hono<HonoBindings>) {
         keyId: tokenId,
       });
       if (!existing) throw new NotFoundError("Personal access token not found");
+      const { createFlareMoAuth } = await loadAuthFactory();
       await createFlareMoAuth(c.env, context.db).api.updateApiKey({
         body: {
           configId: "memos",

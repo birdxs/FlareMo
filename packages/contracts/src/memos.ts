@@ -106,8 +106,18 @@ export const listMemosQuerySchema = z.object({
 export const memoStatsQuerySchema = z.object({
   time_zone: z.string().trim().min(1).max(100).default("UTC"),
   // Space-partitioned sidebar stats; absent means the viewer's own corpus
-  // (the historical, Memos-compatible semantics).
+  // (the historical, Memos-compatible semantics). `all` is accepted and
+  // normalized to absent by the route, matching what the memo list and the tag
+  // hierarchy already do — sending it through used to widen the corpus to every
+  // memo the viewer could read, so the sidebar's three number blocks each read
+  // a different set.
   space: memoSpaceSchema.optional(),
+  /**
+   * Length of the trailing `activity` window in local days. The heatmap's year
+   * view needs 366; the default keeps the historical 84-day window. Capped so
+   * one request cannot ask for an unbounded range.
+   */
+  days: z.coerce.number().int().min(1).max(366).default(84),
 });
 
 export const dailyReviewQuerySchema = z.object({
@@ -576,6 +586,21 @@ export type CreateMemoInput = z.infer<typeof createMemoSchema>;
 export type UpdateMemoInput = z.infer<typeof updateMemoSchema>;
 export type ListMemosQuery = z.infer<typeof listMemosQuerySchema>;
 export type MemoStatsQuery = z.infer<typeof memoStatsQuerySchema>;
+/**
+ * The pre-validation shape. `time_zone` and `days` carry Zod defaults, so the
+ * parsed output requires them while a direct in-process caller may omit both —
+ * internal callers pass literals instead of round-tripping through the schema.
+ *
+ * `days` is restated as `number` because `z.coerce.number()` types its input as
+ * `unknown` (it accepts anything `Number()` can parse), and that widening would
+ * otherwise land on every internal caller.
+ */
+export type MemoStatsQueryInput = Omit<
+  z.input<typeof memoStatsQuerySchema>,
+  "days"
+> & {
+  days?: number;
+};
 export type MemoVisibility = z.infer<typeof memoVisibilitySchema>;
 export type MemoSpace = z.infer<typeof memoSpaceSchema>;
 export type MemoState = z.infer<typeof memoStatusSchema>;

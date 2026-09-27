@@ -12,11 +12,13 @@ import {
   eq,
   inArray,
   isNull,
+  lt,
   lte,
   or,
   type SQL,
   sql,
 } from "drizzle-orm";
+import { ValidationError } from "../errors";
 import {
   memoryEventToDto,
   memoryEvidenceToDto,
@@ -26,15 +28,56 @@ import {
 } from "./dto";
 import { buildFtsCondition, requireMemory } from "./shared";
 
+/**
+ * List page bounds shared by the memory ledger endpoints. The API contract
+ * (`listMemoriesQuerySchema`) allows up to 100 rows per request; the domain
+ * default matches that ceiling so a caller that forgets `pageSize` still gets
+ * a bounded query instead of the whole ledger.
+ */
+const MEMORY_PAGE_MAX = 100;
+
+type MemoryCursor = { updatedAt: string; id: string };
+
+function encodeMemoryPageToken(value: MemoryCursor) {
+  return btoa(JSON.stringify(value));
+}
+
+function decodeMemoryPageToken(token: string): MemoryCursor {
+  try {
+    const parsed = JSON.parse(atob(token)) as Partial<MemoryCursor>;
+    if (typeof parsed.updatedAt === "string" && typeof parsed.id === "string") {
+      return parsed as MemoryCursor;
+    }
+  } catch {
+    // The validation error below gives callers one stable failure shape.
+  }
+  throw new ValidationError("Invalid page token");
+}
+
+// Resume strictly after the cursor row on the (updatedAt, id) tie-break chain
+// that matches the ORDER BY of every paginated memory query below.
+function memoryCursorFilter(cursor: MemoryCursor): SQL {
+  return or(
+    lt(memoryItems.updatedAt, cursor.updatedAt),
+    and(
+      eq(memoryItems.updatedAt, cursor.updatedAt),
+      lt(memoryItems.id, cursor.id),
+    ),
+  ) as SQL;
+}
+
 export async function getMemory(db: FlareMoDb, user: UserRow, id: string) {
   const row = await requireMemory(db, user, id);
-  await db
+  // RETURNING hands back the post-update row, so the access bump costs one
+  // statement instead of update-then-reread.
+  const [bumped] = await db
     .update(memoryItems)
     .set({
       accessCount: row.accessCount + 1,
       lastAccessedAt: new Date().toISOString(),
     })
-    .where(and(eq(memoryItems.id, id), eq(memoryItems.userId, user.id)));
+    .where(and(eq(memoryItems.id, id), eq(memoryItems.userId, user.id)))
+    .returning();
 
   const evidenceRows = await db
     .select()
@@ -43,8 +86,7 @@ export async function getMemory(db: FlareMoDb, user: UserRow, id: string) {
       and(eq(memoryEvidence.memoryId, id), eq(memoryEvidence.userId, user.id)),
     );
 
-  const fresh = await requireMemory(db, user, id);
-  return memoryToDto(fresh, evidenceRows.map(memoryEvidenceToDto));
+  return memoryToDto(bumped ?? row, evidenceRows.map(memoryEvidenceToDto));
 }
 
 export async function listMemories(
@@ -63,8 +105,17 @@ export async function listMemories(
     sourceAgent?: string;
     needsReview?: boolean;
     asOf?: string;
+    pageSize?: number;
+    pageToken?: string;
   } = {},
-) {
+): Promise<{
+  memories: ReturnType<typeof memoryToDto>[];
+  nextPageToken?: string;
+}> {
+  const pageSize = Math.min(
+    Math.max(input.pageSize ?? MEMORY_PAGE_MAX, 1),
+    MEMORY_PAGE_MAX,
+  );
   const filters: SQL[] = [eq(memoryItems.userId, user.id)];
   if (input.q?.trim()) {
     const fts = buildFtsCondition(input.q);
@@ -99,12 +150,29 @@ export async function listMemories(
     );
   }
 
+  const cursor = input.pageToken
+    ? decodeMemoryPageToken(input.pageToken)
+    : undefined;
+  if (cursor) filters.push(memoryCursorFilter(cursor));
+
   const rows = await db
     .select()
     .from(memoryItems)
     .where(and(...filters))
-    .orderBy(desc(memoryItems.updatedAt), desc(memoryItems.id));
-  return rows.map((r) => memoryToDto(r));
+    .orderBy(desc(memoryItems.updatedAt), desc(memoryItems.id))
+    .limit(pageSize + 1);
+
+  const page = rows.slice(0, pageSize);
+  return {
+    memories: page.map((r) => memoryToDto(r)),
+    nextPageToken:
+      rows.length > pageSize && page.length > 0
+        ? encodeMemoryPageToken({
+            updatedAt: (page.at(-1) as MemoryItemRow).updatedAt,
+            id: (page.at(-1) as MemoryItemRow).id,
+          })
+        : undefined,
+  };
 }
 
 export async function listMemoryReview(db: FlareMoDb, user: UserRow) {
@@ -129,7 +197,11 @@ export async function listMemoryReview(db: FlareMoDb, user: UserRow) {
         ),
       ),
     )
-    .orderBy(desc(memoryItems.updatedAt), desc(memoryItems.id));
+    .orderBy(desc(memoryItems.updatedAt), desc(memoryItems.id))
+    // The inbox is a work queue: it is shown whole in the UI, so this cap is
+    // deliberately generous. It exists only to keep one runaway ledger from
+    // turning the queue read into an unbounded scan.
+    .limit(MEMORY_PAGE_MAX);
 
   const ids = rows.map((r) => r.id);
   const evidenceMap = new Map<string, (typeof memoryEvidence.$inferSelect)[]>();

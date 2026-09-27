@@ -6,7 +6,7 @@ import {
   FolderIcon,
   PinIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { listMemories, listMemoryReview } from "@/api";
 import { Button } from "@/components/ui/button";
 import { FilterPill } from "@/components/ui/filter-pill";
@@ -76,19 +76,20 @@ export function MemoryPage() {
       .sort((a, b) => b.count - a.count);
   }, [groups.projects]);
 
-  const handleSelectProject = (projectKey: string | null) => {
+  const handleSelectProject = useCallback((projectKey: string | null) => {
     setSelectedProject(projectKey);
     setTab("projects");
-  };
+  }, []);
 
   const reviewMemories = useMemo(
     () => reviewQuery.data?.memories ?? [],
     [reviewQuery.data],
   );
 
-  const invalidate = () => {
+  // Stable identities so the memoized MemoryCard rows survive a parent render.
+  const invalidate = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["memories"] });
-  };
+  }, [queryClient]);
 
   const reviewCount = reviewMemories.length;
 

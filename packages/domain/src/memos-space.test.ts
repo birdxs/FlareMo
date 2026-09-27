@@ -263,9 +263,9 @@ describe("updateMemo tag re-extraction", () => {
     const edited = await getMemoById(db, member, memo.id);
     expect(edited.payload.tags).toEqual(["随笔"]);
     const tree = await listTagHierarchy(db, member, {});
-    expect(tree.map((node) => ({ name: node.name, count: node.count }))).toEqual(
-      [{ name: "随笔", count: 1 }],
-    );
+    expect(
+      tree.map((node) => ({ name: node.name, count: node.count })),
+    ).toEqual([{ name: "随笔", count: 1 }]);
 
     // Removing the token in a later edit drops the tag again.
     await updateMemo(db, member, memo.id, {

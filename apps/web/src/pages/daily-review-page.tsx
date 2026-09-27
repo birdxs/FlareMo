@@ -44,8 +44,8 @@ export function DailyReviewPage() {
       : (intervalQuery.data?.memos ?? []);
 
   const groups = useMemo(
-    () => buildReviewGroups(rawMemos, today, locale, t),
-    [rawMemos, today, locale, t],
+    () => buildReviewGroups(rawMemos, today, t),
+    [rawMemos, today, t],
   );
 
   const isInitialLoading = reviewQuery.isLoading;
@@ -161,7 +161,6 @@ type ReviewGroup = {
 function buildReviewGroups(
   memos: Memo[],
   todayStr: string,
-  locale: string,
   t: (key: TranslationKey, params?: TranslationParams) => string,
 ): ReviewGroup[] {
   const currentYear = new Date().getFullYear();
@@ -194,16 +193,16 @@ function buildReviewGroups(
       );
       if (diffDays <= 7) {
         key = "ladder-7d";
-        title = locale.startsWith("zh") ? "7 天前" : "7 days ago";
+        title = t("review.ladder7d");
       } else if (diffDays <= 30) {
         key = "ladder-30d";
-        title = locale.startsWith("zh") ? "30 天前" : "30 days ago";
+        title = t("review.ladder30d");
       } else if (diffDays <= 90) {
         key = "ladder-90d";
-        title = locale.startsWith("zh") ? "90 天前" : "90 days ago";
+        title = t("review.ladder90d");
       } else {
         key = "ladder-180d";
-        title = locale.startsWith("zh") ? "半年前" : "6 months ago";
+        title = t("review.ladder180d");
       }
     }
 

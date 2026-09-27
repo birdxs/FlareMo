@@ -56,6 +56,7 @@ export async function createConnectMemoComment(
         ? { commentId: optionalString(body.commentId) }
         : {}),
     },
+    { userLimits: context.userLimits },
   );
   return connectMemoWithDetails(context, created.id);
 }

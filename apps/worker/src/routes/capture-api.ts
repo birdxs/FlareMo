@@ -6,7 +6,7 @@ import { bridgeCapture } from "../asr/bridge";
 import { resolveVoiceService } from "../asr/configuration";
 import { sniffAudioMimeType } from "../asr/minimax";
 import { AsrProviderError } from "../asr/types";
-import { getTrustedOrigins } from "../auth";
+import { getTrustedOrigins } from "../auth-env";
 import { getBrowserRequestContext, type HonoBindings } from "../context";
 import { jsonError } from "../http";
 import { rateLimitGuard } from "../rate-limit";

@@ -14,11 +14,11 @@ import {
 } from "@flaremo/domain";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { getTrustedOrigins } from "./auth";
+import { getTrustedOrigins } from "./auth-env";
 import {
   assertTrustedCookieMutation,
   getFlareMoAuthHandler,
-  getFlareMoRuntime,
+  getFlareMoDb,
   getRequestContext,
   type HonoBindings,
 } from "./context";
@@ -32,10 +32,10 @@ import { betterAuthRateLimitBucket, rateLimitGuard } from "./rate-limit";
 // original import path (./index) keeps serving it verbatim.
 export { runScheduledMaintenance } from "./scheduled-tasks";
 
+import { mountLazyRoute, mountLazySsrPages } from "./lazy-routes";
 import { accountApi } from "./routes/account-api";
 import { adminApi } from "./routes/admin-api";
 import { appApi } from "./routes/app-api";
-import { articlesApi } from "./routes/articles-api";
 import { authApi } from "./routes/auth-api";
 import { brandingApi } from "./routes/branding-api";
 import { emailSettingsApi } from "./routes/email-settings-api";
@@ -54,7 +54,6 @@ import { publicApi } from "./routes/public-api";
 import { tasksApi } from "./routes/tasks-api";
 import { runScheduledMaintenance } from "./scheduled-tasks";
 import { isKnownFrontendPath } from "./spa-routes";
-import { mountLazyRoute, mountLazySsrPages } from "./lazy-routes";
 
 /**
  * Kernel assembly entry. Every call returns a fresh Hono instance so hosts
@@ -213,7 +212,7 @@ export function createFlareMoApp(
   app.get("/api/app/auth-providers", async (c) => {
     // Direct resolve (no TTL cache): the login page must reflect an owner's
     // fresh provider config on the next reload.
-    const { db } = getFlareMoRuntime(c.env);
+    const db = getFlareMoDb(c.env);
     const oauth = await resolveOauthIntegration(c.env, db);
     return c.json(
       { google: Boolean(oauth.google), github: Boolean(oauth.github) },
@@ -242,19 +241,39 @@ export function createFlareMoApp(
   app.route("/api/app/admin", adminApi);
   app.route("/api/app/memory", memoryApi);
   app.route("/api/app/projects", projectsApi);
-  app.route("/api/app/articles", articlesApi);
+  // The articles API is a low-traffic tree with real sub-paths (`/:id`,
+  // `/:id/publish`, …), so the wildcard registration is required. Lazy mounting
+  // keeps the route module itself out of the isolate startup graph; the sub-app
+  // shape is the `app.route()` contract (paths relative to the mount prefix),
+  // which is what mountLazyRoute re-bases against.
+  mountLazyRoute(app, "/api/app/articles", async () => {
+    const { articlesApi } = await import("./routes/articles-api");
+    return articlesApi;
+  });
   app.route("/api/app/tasks", tasksApi);
   app.route("/api/app", appApi);
   app.route("/api/public", publicApi);
   // SSR public pages (share/article + sitemap/feed): the largest lazy win —
-  // marked/shiki-core/sitemap/feed/transliteration only parse when one of the
-  // five public page paths is actually requested.
+  // marked/shiki-core/sitemap/feed only parse when one of the five public page
+  // paths is actually requested.
+  //
+  // Route lazy-mounting cannot reach everything, though, and it is worth being
+  // precise about why. The `@flaremo/domain` barrel is statically imported by
+  // this file for half a dozen unrelated symbols, and a value `export *` keeps
+  // its whole subtree alive no matter which routes are lazy. So `cel-js` stays
+  // on the startup graph by way of `memo-filter/environment`. `transliteration`
+  // used to be pinned the same way, through `articles.ts`; that one is gone,
+  // but only because `articles.ts` now defers the `slugify` import to call time
+  // rather than because the route moved. Verified by walking the bundler's
+  // static-import edges, not by reading a sourcemap — a module's code staying
+  // in the uploaded file says nothing about whether it runs at startup.
+  // Issue #138.
   mountLazySsrPages(app);
   app.get("/favicon.ico", async (c) => {
     // Only browsers without a <link rel="icon"> hit this; redirect to the
     // custom favicon when one is configured, else to the bundled asset.
     try {
-      const branding = await getBranding(getFlareMoRuntime(c.env).db);
+      const branding = await getBranding(getFlareMoDb(c.env));
       if (branding.favicon) {
         return c.redirect(
           `/api/app/branding/favicon?v=${encodeURIComponent(branding.favicon.updated_at)}`,
@@ -444,7 +463,7 @@ export function createFlareMoWorker(
       // per-request query tax. The daily cron sweeps whatever reads missed.
       const method = request.method.toUpperCase();
       if (method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
-        const { db } = getFlareMoRuntime(env);
+        const db = getFlareMoDb(env);
         // `ExecutionContext` is part of the Worker handler contract. Keeping
         // this post-response work on `waitUntil` avoids changing the route-only
         // test semantics for direct handler calls without a Worker runtime.

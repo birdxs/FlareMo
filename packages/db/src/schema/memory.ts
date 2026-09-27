@@ -148,6 +148,18 @@ export const memoryItems = sqliteTable(
     uniqueIndex("memory_items_user_idempotency_idx")
       .on(table.userId, table.idempotencyKey)
       .where(sql`${table.idempotencyKey} IS NOT NULL`),
+    // The two daily maintenance sweeps filter globally (not per user), so
+    // neither user-leading index above can serve them. These partial indexes
+    // cover exactly the predicates in expireStaleInferredProposals and
+    // reclaimStaleMemoryVectors.
+    index("memory_items_inferred_review_sweep_idx")
+      .on(table.createdAt)
+      .where(
+        sql`${table.verification} = 'inferred' AND ${table.status} = 'active' AND ${table.needsReview} = 1`,
+      ),
+    index("memory_items_vector_reclaim_sweep_idx")
+      .on(table.embeddingStatus)
+      .where(sql`${table.embeddingStatus} IN ('indexed', 'pending', 'error')`),
   ],
 );
 

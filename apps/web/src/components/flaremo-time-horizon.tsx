@@ -175,7 +175,7 @@ export const FlareMoTimeHorizon = memo(function FlareMoTimeHorizon({
 
   // ── Range Title ────────────────────────────────────────────────────────────
   const rangeTitle = useMemo(() => {
-    if (tab === "year") return `${currentYear}年`;
+    if (tab === "year") return t("explorer.yearTitle", { year: currentYear });
     if (tab === "month") return formatMonthTitle(currentMonthKey, locale);
     if (tab === "week") {
       const first = weekDays[0];
@@ -195,7 +195,7 @@ export const FlareMoTimeHorizon = memo(function FlareMoTimeHorizon({
       weekday: "short",
     });
     return fmt.format(d);
-  }, [tab, currentYear, currentMonthKey, weekDays, selectedDay, locale]);
+  }, [tab, currentYear, currentMonthKey, weekDays, selectedDay, locale, t]);
 
   // ── Navigation ─────────────────────────────────────────────────────────────
   const handlePrev = () => {
@@ -238,10 +238,10 @@ export const FlareMoTimeHorizon = memo(function FlareMoTimeHorizon({
         >
           {(
             [
-              ["year", "年"],
-              ["month", "月"],
-              ["week", "周"],
-              ["day", "日"],
+              ["year", t("explorer.tab.year")],
+              ["month", t("explorer.tab.month")],
+              ["week", t("explorer.tab.week")],
+              ["day", t("explorer.tab.day")],
             ] as const
           ).map(([id, label]) => (
             <button
@@ -265,12 +265,12 @@ export const FlareMoTimeHorizon = memo(function FlareMoTimeHorizon({
         {/* Quick Return to Today when navigated away */}
         {isAwayFromToday ? (
           <button
-            aria-label="回到今日"
-            className="rounded-md border border-border/60 bg-background/80 px-2 py-0.5 text-[11px] font-medium text-foreground/80 shadow-2xs transition-colors hover:border-brand-500/50 hover:bg-background hover:text-brand-600 dark:border-border/40 dark:bg-muted/30 dark:hover:text-brand-400 cursor-pointer"
+            aria-label={t("explorer.backToToday")}
+            className="rounded-md border border-border/60 bg-background/80 px-2 py-0.5 text-xs font-medium text-foreground/80 shadow-2xs transition-colors hover:border-brand-500/50 hover:bg-background hover:text-brand-600 dark:border-border/40 dark:bg-muted/30 dark:hover:text-brand-400 cursor-pointer"
             type="button"
             onClick={handleJumpToday}
           >
-            今日
+            {t("explorer.today")}
           </button>
         ) : null}
       </div>
@@ -278,7 +278,7 @@ export const FlareMoTimeHorizon = memo(function FlareMoTimeHorizon({
       {/* ── Range Navigator ────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-1">
         <button
-          aria-label="上一期"
+          aria-label={t("explorer.previousPeriod")}
           className="rounded p-1 text-foreground/70 hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
           type="button"
           onClick={handlePrev}
@@ -289,7 +289,7 @@ export const FlareMoTimeHorizon = memo(function FlareMoTimeHorizon({
           {rangeTitle}
         </span>
         <button
-          aria-label="下一期"
+          aria-label={t("explorer.nextPeriod")}
           className="rounded p-1 text-foreground/70 hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
           type="button"
           onClick={handleNext}

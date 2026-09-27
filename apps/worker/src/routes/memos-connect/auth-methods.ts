@@ -10,7 +10,8 @@ import { currentUserToDto } from "@flaremo/memos";
 import { verifyCaptchaRequest } from "../../captcha";
 import {
   assertTrustedCookieMutation,
-  getFlareMoRuntime,
+  getFlareMoAuth,
+  getFlareMoDb,
   type getRequestContext,
 } from "../../context";
 import { resolveEmailSendConfig } from "../../email";
@@ -55,7 +56,8 @@ export async function connectAuthSignIn(
     const credentials = record(record(value).passwordCredentials);
     const username = requiredString(credentials.username, "username");
     const password = requiredString(credentials.password, "password");
-    const { db, auth } = getFlareMoRuntime(c.env);
+    const db = getFlareMoDb(c.env);
+    const auth = await getFlareMoAuth(c.env);
     const result = await auth.api.signInUsername({
       body: { username, password, rememberMe: true },
       headers: c.req.raw.headers,
@@ -74,7 +76,7 @@ export async function connectAuthSignIn(
       user: session.user,
       request: c.req.raw,
     });
-    const response = connectValue(
+    const response = await connectValue(
       c,
       {
         user: currentUserToDto(
@@ -117,7 +119,7 @@ export async function connectAuthRefresh(
 ) {
   try {
     if (c.req.raw.headers.get("cookie")) assertTrustedCookieMutation(c);
-    const db = getFlareMoRuntime(c.env).db;
+    const db = getFlareMoDb(c.env);
     const rotated = await rotateMemosRefreshToken({
       db,
       env: c.env,
@@ -132,7 +134,7 @@ export async function connectAuthRefresh(
         401,
       );
     }
-    const response = connectValue(
+    const response = await connectValue(
       c,
       {
         accessToken: rotated.accessToken,
@@ -161,7 +163,7 @@ export async function connectAuthSignOut(
       headers: c.req.raw.headers,
       expectedAuthUserId: context.authUserId,
     });
-    const response = connectValue(c, {}, transport);
+    const response = await connectValue(c, {}, transport);
     const bearer = c.req.header("authorization");
     if (context.bearerSession && bearer) {
       await revokeAuthSessionByToken(context.db, parseBearerForSignOut(bearer));
@@ -169,7 +171,7 @@ export async function connectAuthSignOut(
     if (c.req.raw.headers.get("cookie")) {
       const headers = new Headers(c.req.raw.headers);
       headers.delete("authorization");
-      const authResponse = await getFlareMoRuntime(c.env).auth.handler(
+      const authResponse = await (await getFlareMoAuth(c.env)).handler(
         new Request(new URL("/api/auth/sign-out", c.req.url), {
           method: "POST",
           headers,
@@ -215,7 +217,7 @@ export async function connectAuthSignUp(
       optionalString(body.nickname) ??
       username;
 
-    const db = getFlareMoRuntime(c.env).db;
+    const db = getFlareMoDb(c.env);
     const bootstrap = await getAuthBootstrapStatus(db);
     if (bootstrap.state !== "complete") {
       return connectErrorForTransport(
@@ -265,7 +267,7 @@ export async function connectAuthSignUp(
       user,
       request: c.req.raw,
     });
-    const response = connectValue(
+    const response = await connectValue(
       c,
       {
         user: dto,

@@ -1,4 +1,3 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArchiveIcon,
   CheckIcon,
@@ -16,19 +15,8 @@ import {
   Trash2Icon,
   XIcon,
 } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
-import {
-  archiveMemory,
-  confirmMemory,
-  deleteMemory,
-  type Memory,
-  pinMemory,
-  promoteMemoryToMemo,
-  resolveProposal,
-  restoreMemory,
-  unpinMemory,
-} from "@/api";
+import { memo, useState } from "react";
+import type { Memory } from "@/api";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,14 +36,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useI18n } from "@/i18n";
-import { errorMessage } from "@/lib/error";
 import { formatMemoRelativeTime, formatMemoTime } from "@/lib/memo";
 import { cn, stripResourceName } from "@/lib/utils";
 import { formatProjectName } from "./memory-filters";
 import { MemoryFormDialog } from "./memory-form-dialog";
 import { MemoryRevisions } from "./memory-revisions";
+import { useMemoryMutations } from "./use-memory-mutations";
 
-export function MemoryCard({
+export const MemoryCard = memo(function MemoryCard({
   memory,
   showSource,
   review,
@@ -69,106 +57,11 @@ export function MemoryCard({
   onMutated: () => void;
 }) {
   const { locale, t } = useI18n();
-  const queryClient = useQueryClient();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editing, setEditing] = useState(false);
   const [showRevisions, setShowRevisions] = useState(false);
 
-  const confirmMutation = useMutation({
-    mutationFn: () => {
-      if (memory.needs_review || memory.verification === "inferred") {
-        return resolveProposal(stripResourceName(memory.id, "memories"), {
-          action: "accept",
-        });
-      }
-      return confirmMemory(stripResourceName(memory.id, "memories"));
-    },
-    onSuccess: () => {
-      toast.success(t("toast.memoryConfirmed"));
-      onMutated();
-    },
-    onError: (error) =>
-      toast.error(errorMessage(error, t("toast.memoryConfirmFailed"))),
-  });
-
-  const rejectMutation = useMutation({
-    mutationFn: () =>
-      resolveProposal(stripResourceName(memory.id, "memories"), {
-        action: "reject",
-        rejection_reason: "user_rejected_in_inbox",
-      }),
-    onSuccess: () => {
-      toast.success(t("toast.memoryRejected"));
-      onMutated();
-    },
-    onError: (error) =>
-      toast.error(errorMessage(error, t("toast.memoryRejectFailed"))),
-  });
-
-  const pinMutation = useMutation({
-    mutationFn: () => pinMemory(stripResourceName(memory.id, "memories")),
-    onSuccess: () => {
-      toast.success(t("toast.memoryLocked"));
-      onMutated();
-    },
-    onError: (error) =>
-      toast.error(errorMessage(error, t("toast.memoryLockFailed"))),
-  });
-
-  const unpinMutation = useMutation({
-    mutationFn: () => unpinMemory(stripResourceName(memory.id, "memories")),
-    onSuccess: () => {
-      toast.success(t("toast.memoryUnlocked"));
-      onMutated();
-    },
-    onError: (error) =>
-      toast.error(errorMessage(error, t("toast.memoryUnlockFailed"))),
-  });
-
-  const archiveMutation = useMutation({
-    mutationFn: () => archiveMemory(stripResourceName(memory.id, "memories")),
-    onSuccess: () => {
-      toast.success(t("toast.memoryArchived"));
-      onMutated();
-    },
-    onError: (error) =>
-      toast.error(errorMessage(error, t("toast.memoryArchiveFailed"))),
-  });
-
-  const restoreMutation = useMutation({
-    mutationFn: () => restoreMemory(stripResourceName(memory.id, "memories")),
-    onSuccess: () => {
-      toast.success(t("toast.memoryRestored"));
-      onMutated();
-    },
-    onError: (error) =>
-      toast.error(errorMessage(error, t("toast.memoryRestoreFailed"))),
-  });
-
-  const promoteMutation = useMutation({
-    mutationFn: () =>
-      promoteMemoryToMemo(stripResourceName(memory.id, "memories")),
-    onSuccess: () => {
-      toast.success(t("toast.saved"));
-      onMutated();
-      void queryClient.invalidateQueries({ queryKey: ["memos"] });
-      void queryClient.invalidateQueries({ queryKey: ["memo-stats"] });
-      void queryClient.invalidateQueries({ queryKey: ["tag-hierarchy"] });
-    },
-    onError: (error) =>
-      toast.error(errorMessage(error, t("toast.memoryPromoteFailed"))),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: () => deleteMemory(stripResourceName(memory.id, "memories")),
-    onSuccess: () => {
-      toast.success(t("toast.memoryDeleted"));
-      onMutated();
-    },
-    onError: (error) =>
-      toast.error(errorMessage(error, t("toast.memoryDeleteFailed"))),
-  });
-
+  const mutation = useMemoryMutations(memory, onMutated);
   const id = stripResourceName(memory.id, "memories");
 
   return (
@@ -261,24 +154,24 @@ export function MemoryCard({
               </DropdownMenuItem>
 
               {memory.verification === "locked" ? (
-                <DropdownMenuItem onClick={() => unpinMutation.mutate()}>
+                <DropdownMenuItem onClick={() => mutation.mutate("unpin")}>
                   <PinOffIcon />
                   {t("memory.unpin")}
                 </DropdownMenuItem>
               ) : (
-                <DropdownMenuItem onClick={() => pinMutation.mutate()}>
+                <DropdownMenuItem onClick={() => mutation.mutate("pin")}>
                   <PinIcon />
                   {t("memory.pin")}
                 </DropdownMenuItem>
               )}
 
               {memory.status === "active" ? (
-                <DropdownMenuItem onClick={() => archiveMutation.mutate()}>
+                <DropdownMenuItem onClick={() => mutation.mutate("archive")}>
                   <ArchiveIcon />
                   {t("memory.archive")}
                 </DropdownMenuItem>
               ) : (
-                <DropdownMenuItem onClick={() => restoreMutation.mutate()}>
+                <DropdownMenuItem onClick={() => mutation.mutate("restore")}>
                   <CornerUpLeftIcon />
                   {t("memory.restore")}
                 </DropdownMenuItem>
@@ -291,7 +184,7 @@ export function MemoryCard({
                 {t("memory.revisions")}
               </DropdownMenuItem>
 
-              <DropdownMenuItem onClick={() => promoteMutation.mutate()}>
+              <DropdownMenuItem onClick={() => mutation.mutate("promote")}>
                 <NotebookPenIcon />
                 {t("memory.toMemo")}
               </DropdownMenuItem>
@@ -345,8 +238,8 @@ export function MemoryCard({
           <Button
             size="sm"
             variant="default"
-            onClick={() => confirmMutation.mutate()}
-            disabled={confirmMutation.isPending}
+            onClick={() => mutation.mutate("confirm")}
+            disabled={mutation.isPending && mutation.variables === "confirm"}
             className="h-8 gap-1.5 text-xs"
           >
             <CheckIcon className="size-3.5" />
@@ -355,8 +248,8 @@ export function MemoryCard({
           <Button
             size="sm"
             variant="outline"
-            onClick={() => rejectMutation.mutate()}
-            disabled={rejectMutation.isPending}
+            onClick={() => mutation.mutate("reject")}
+            disabled={mutation.isPending && mutation.variables === "reject"}
             className="h-8 gap-1.5 text-xs"
           >
             <XIcon className="size-3.5" />
@@ -387,7 +280,7 @@ export function MemoryCard({
             </AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
-              onClick={() => deleteMutation.mutate()}
+              onClick={() => mutation.mutate("delete")}
             >
               {t("common.delete")}
             </AlertDialogAction>
@@ -412,4 +305,4 @@ export function MemoryCard({
       />
     </article>
   );
-}
+});

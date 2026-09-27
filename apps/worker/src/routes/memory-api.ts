@@ -55,7 +55,7 @@ memoryApi.get("/", zValidator("query", listMemoriesQuerySchema), async (c) => {
   try {
     const { db, user } = await getBrowserRequestContext(c);
     const query = c.req.valid("query");
-    const memories = await listMemories(db, user, {
+    const { memories, nextPageToken } = await listMemories(db, user, {
       q: query.q,
       type: query.type,
       kind: query.kind,
@@ -68,8 +68,13 @@ memoryApi.get("/", zValidator("query", listMemoriesQuerySchema), async (c) => {
       sourceAgent: query.source_agent,
       needsReview: query.needs_review,
       asOf: query.as_of,
+      pageSize: query.page_size,
+      pageToken: query.page_token,
     });
-    return c.json({ memories });
+    return c.json({
+      memories,
+      ...(nextPageToken ? { next_page_token: nextPageToken } : {}),
+    });
   } catch (error) {
     return jsonError(c, error);
   }

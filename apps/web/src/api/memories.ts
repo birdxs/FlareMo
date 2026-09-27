@@ -19,7 +19,14 @@ export type ListMemoriesParams = {
   needs_review?: boolean;
 };
 
-export async function listMemories(params: ListMemoriesParams = {}) {
+// The workspace renders the ledger whole (tabs, project groups and counts are
+// all derived client-side), so the browser still needs every page. It walks
+// the server cursor in bounded requests instead of asking the Worker for one
+// unbounded read; the cap only guards against a runaway loop.
+const MEMORY_PAGE_SIZE = 100;
+const MEMORY_PAGE_LIMIT = 50;
+
+function buildMemoryQuery(params: ListMemoriesParams) {
   const query = new URLSearchParams();
   if (params.q) query.set("q", params.q);
   if (params.type) query.set("type", params.type);
@@ -32,10 +39,25 @@ export async function listMemories(params: ListMemoriesParams = {}) {
   if (params.source_agent) query.set("source_agent", params.source_agent);
   if (params.needs_review !== undefined)
     query.set("needs_review", String(params.needs_review));
+  return query;
+}
 
-  return apiRequest<{ memories: Memory[] }>(
-    `/api/app/memory?${query.toString()}`,
-  );
+export async function listMemories(params: ListMemoriesParams = {}) {
+  const memories: Memory[] = [];
+  let pageToken: string | undefined;
+  for (let page = 0; page < MEMORY_PAGE_LIMIT; page += 1) {
+    const query = buildMemoryQuery(params);
+    query.set("page_size", String(MEMORY_PAGE_SIZE));
+    if (pageToken) query.set("page_token", pageToken);
+    const result = await apiRequest<{
+      memories: Memory[];
+      next_page_token?: string;
+    }>(`/api/app/memory?${query.toString()}`);
+    memories.push(...result.memories);
+    pageToken = result.next_page_token;
+    if (!pageToken) break;
+  }
+  return { memories };
 }
 
 export async function listMemoryReview() {

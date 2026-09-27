@@ -14,11 +14,12 @@ import {
 } from "@flaremo/domain";
 import { currentMemoToDto, currentUserToDto } from "@flaremo/memos";
 import type { z } from "zod";
-import { createFlareMoAuth } from "../../auth";
 import {
-  getFlareMoRuntime,
+  getFlareMoAuth,
+  getFlareMoDb,
   type getOptionalRequestContext,
   type getRequestContext,
+  loadAuthFactory,
 } from "../../context";
 import { getAuthUserCached } from "../../identity-cache";
 import { base64ToUint8Array } from "../../memos-compat/base64";
@@ -95,7 +96,7 @@ export async function currentUserForContext(context: {
 export async function createAuthContext(
   c: Parameters<typeof getRequestContext>[0],
 ) {
-  return getFlareMoRuntime(c.env);
+  return { db: getFlareMoDb(c.env), auth: await getFlareMoAuth(c.env) };
 }
 export function assertSessionCredential(
   context: Awaited<ReturnType<typeof getRequestContext>>,
@@ -119,7 +120,7 @@ export function assertOwnerUser(
 export async function assertRegistrationOpen(
   c: Parameters<typeof getRequestContext>[0],
 ) {
-  const db = getFlareMoRuntime(c.env).db;
+  const db = getFlareMoDb(c.env);
   const status = await getAuthBootstrapStatus(db);
   if (status.state !== "complete") {
     throw new ConflictError("Registration is not available yet");
@@ -366,6 +367,7 @@ export async function signOutCookieSession(
     method: "POST",
     headers,
   });
+  const { createFlareMoAuth } = await loadAuthFactory();
   return await createFlareMoAuth(c.env, db).handler(request);
 }
 

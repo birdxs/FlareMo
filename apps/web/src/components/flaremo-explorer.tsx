@@ -43,6 +43,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useI18n } from "@/i18n";
 import { buildMonthLabels, currentStreak } from "@/lib/activity";
 import { queryKeys } from "@/lib/query-keys";
+import { TIMELINE_SEARCH } from "@/lib/timeline-search";
 import { cn } from "@/lib/utils";
 
 export type ExplorerView = "all" | "archived" | "trashed";
@@ -143,12 +144,7 @@ export const FlareMoExplorer = memo(function FlareMoExplorer({
           className="flex h-9 items-center gap-3 rounded-lg px-2.5 text-muted-foreground motion-safe:transition-[background-color,color,transform] motion-safe:duration-150 hover:bg-muted hover:text-foreground motion-safe:hover:translate-x-0.5"
           onClick={onNavigate}
           search={{
-            view: undefined,
-            space: undefined,
-            q: undefined,
-            tag: undefined,
-            untagged: undefined,
-            compose: undefined,
+            ...TIMELINE_SEARCH,
           }}
           to="/"
         >

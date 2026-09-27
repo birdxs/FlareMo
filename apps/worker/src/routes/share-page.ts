@@ -1,7 +1,7 @@
 import { getBranding, getPublicShareByToken } from "@flaremo/domain";
 import type { Context, Hono } from "hono";
 import { SitemapIndexStream, streamToPromise } from "sitemap";
-import { getFlareMoRuntime, type HonoBindings } from "../context";
+import { getFlareMoDb, type HonoBindings } from "../context";
 import {
   attachmentImageDimensions,
   contentToPlainText,
@@ -432,7 +432,7 @@ export function registerSharePage(app: Hono<HonoBindings>): void {
   });
 
   app.get("/share/:token", async (c) => {
-    const db = getFlareMoRuntime(c.env).db;
+    const db = getFlareMoDb(c.env);
     try {
       const data = await getPublicShareByToken(db, c.req.param("token"));
       const branding = await getBranding(db);
