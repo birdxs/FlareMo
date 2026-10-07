@@ -1,11 +1,5 @@
 import type { FlareMoDb } from "@flaremo/db";
-import {
-  attachments,
-  memoryItems,
-  memos,
-  usageCounters,
-  users,
-} from "@flaremo/db";
+import { attachments, memoryItems, usageCounters, users } from "@flaremo/db";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { QuotaExceededError } from "./errors";
 import type { PlanLimits, PlanLimitValue, UserPlanLimits } from "./limits";

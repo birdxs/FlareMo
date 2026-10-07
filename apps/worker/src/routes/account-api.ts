@@ -1,5 +1,6 @@
 import {
   beginFlaremoMemberRemoval,
+  ConflictError,
   createMemberRemovalJob,
   deleteMemosPersonalAccessToken,
   ForbiddenError,
@@ -159,20 +160,24 @@ accountApi.post("/email", zValidator("json", changeEmailSchema), async (c) => {
       throw new ValidationError("The current password is incorrect.");
     }
 
+    // An address that already belongs to another identity is a conflict in
+    // both credential stores, and neither write may be attempted: Better Auth
+    // rejects an occupied auth email with a raw unique-index error that reads
+    // as a server fault. Checked ahead of the branch below so the
+    // no-provider deployment cannot reach that write.
+    const existingAuthUser = await auth.findAuthUserByEmail(newEmail);
+    if (existingAuthUser && existingAuthUser.id !== context.authUserId) {
+      throw new ConflictError("That email is already in use.");
+    }
+    if (await isFlaremoUserEmailTaken(context.db, newEmail, context.user.id)) {
+      throw new ConflictError("That email is already in use.");
+    }
+
     // When a transactional-email provider is configured, the change only
     // takes effect after the NEW address confirms ownership through its
     // verification link, so a typo cannot lock the account out of every
     // future email flow.
     if ((await resolveEmailSendConfig(c.env, context.db)).provider !== "none") {
-      const existingAuthUser = await auth.findAuthUserByEmail(newEmail);
-      if (existingAuthUser && existingAuthUser.id !== context.authUserId) {
-        throw new ValidationError("That email is already in use.");
-      }
-      if (
-        await isFlaremoUserEmailTaken(context.db, newEmail, context.user.id)
-      ) {
-        throw new ValidationError("That email is already in use.");
-      }
       const token = await auth.createEmailChangeToken(
         context.authUserId,
         newEmail,

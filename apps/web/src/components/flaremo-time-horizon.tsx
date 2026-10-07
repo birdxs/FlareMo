@@ -14,7 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { memo, useMemo, useState } from "react";
-import { getHourlyActivity, listMemos } from "@/api";
+import { getHourlyActivity, getMemoStats, listMemos } from "@/api";
 import { useI18n } from "@/i18n";
 import {
   addMonths,
@@ -28,6 +28,7 @@ import {
   type WeekStart,
 } from "@/lib/calendar-date";
 import {
+  ACTIVITY_WINDOW_DAYS,
   buildActivityCountMap,
   monthRangeOf,
   parseDayKey,
@@ -58,7 +59,8 @@ export type {
 export const FlareMoTimeHorizon = memo(function FlareMoTimeHorizon({
   stats,
   streak: _streak,
-  monthLabels,
+  timeZone,
+  space,
   onDaySelect,
   onNavigate,
   hoveredDate,
@@ -87,6 +89,31 @@ export const FlareMoTimeHorizon = memo(function FlareMoTimeHorizon({
     () => buildActivityCountMap(stats.activity),
     [stats.activity],
   );
+
+  // The shared stats query is anchored to today, so a historical year would
+  // inherit a trailing-366-days slice that covers at most its tail and render
+  // the rest as zeroes (issue #144). The year view asks for the navigated
+  // year's own window (until Dec 31); the counter read behind it scales with
+  // active hours in the range, not memo count, so 2019 costs no more than
+  // today. Falls back to the shared array while it loads.
+  const yearStatsQuery = useQuery({
+    queryKey: ["memo-stats-year", space, timeZone, currentYear],
+    queryFn: ({ signal }) =>
+      getMemoStats(
+        timeZone,
+        space,
+        ACTIVITY_WINDOW_DAYS,
+        `${currentYear}-12-31`,
+        signal,
+      ),
+    enabled: tab === "year",
+    staleTime: 60_000,
+    retry: false,
+  });
+  const yearActivity =
+    tab === "year"
+      ? (yearStatsQuery.data?.activity ?? stats.activity)
+      : stats.activity;
 
   // Hourly query for Day view (24 hours)
   const dayHourlyQuery = useQuery({
@@ -319,7 +346,7 @@ export const FlareMoTimeHorizon = memo(function FlareMoTimeHorizon({
           {/* YEAR VIEW: 365 Days across 12 Month Dot Clusters */}
           {tab === "year" && (
             <YearHorizonPureView
-              activity={stats.activity}
+              activity={yearActivity}
               displayMode={displayMode}
               today={today}
               weekStart={weekStart}
@@ -376,13 +403,6 @@ export const FlareMoTimeHorizon = memo(function FlareMoTimeHorizon({
             />
           )}
         </div>
-      </div>
-
-      {/* ── Hidden monthLabels container for E2E Contract Parity ─────────── */}
-      <div aria-hidden="true" className="hidden">
-        {monthLabels.map((m) => (
-          <span key={m.date}>{m.label}</span>
-        ))}
       </div>
 
       {/* ── Bottom Single-Line Micro Tooltip (Hover Details Only) ────────── */}

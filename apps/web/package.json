@@ -2,13 +2,13 @@
   "name": "@flaremo/web",
   "license": "AGPL-3.0-only",
   "private": true,
-  "version": "0.20.1",
+  "version": "0.22.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "check": "tsc --noEmit -p tsconfig.app.json --pretty false && tsc --noEmit -p tsconfig.node.json --pretty false",
-    "typecheck": "tsc -b --pretty false",
+    "build": "tsc -b && tsc --noEmit -p tsconfig.team-projects.json && vite build",
+    "check": "tsc --noEmit -p tsconfig.app.json --pretty false && tsc --noEmit -p tsconfig.node.json --pretty false && tsc --noEmit -p tsconfig.team-projects.json --pretty false",
+    "typecheck": "tsc -b --pretty false && tsc --noEmit -p tsconfig.team-projects.json --pretty false",
     "test": "vitest run --config ../../vitest.config.ts --passWithNoTests",
     "preview": "vite preview"
   },

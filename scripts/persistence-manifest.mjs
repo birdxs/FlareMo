@@ -53,10 +53,17 @@ export const RESTORE_TABLES = [
   "task_activity",
 ];
 
-// Vectorize is a derived index. Do not restore old success/dead task rows into
-// an empty replacement index: POST_RESTORE_DERIVED_SQL turns eligible source
-// resources into fresh, durable reindex work instead.
-export const REBUILDABLE_TABLES = ["embedding_tasks"];
+// Derived tables that must not be restored verbatim, because a stale copy
+// would be indistinguishable from truth and the rebuild is cheap:
+//
+// - `embedding_tasks` drives the Vectorize index. Do not restore old
+//   success/dead rows into an empty replacement index: POST_RESTORE_DERIVED_SQL
+//   turns eligible source resources into fresh, durable reindex work instead.
+// - `memo_hourly_counts` is a per-author activity aggregate whose own module
+//   says `memos` is authoritative and the daily recalibration rebuilds it. The
+//   restore clears the rows so the counters are recomputed from restored memos
+//   rather than replayed from a dump that may predate the newest writes.
+export const REBUILDABLE_TABLES = ["embedding_tasks", "memo_hourly_counts"];
 
 export const DERIVED_INDEX_TABLES = ["memos_fts", "memory_fts"];
 
@@ -73,6 +80,10 @@ const restoreNow = "strftime('%Y-%m-%dT%H:%M:%fZ','now')";
  * Run after source-table inserts. A restored deployment must bind a fresh or
  * explicitly cleared Vectorize index; these rows let the normal outbox rebuild
  * the index without pretending a copied D1 task status proves vectors exist.
+ *
+ * `memo_hourly_counts` is rebuilt here too, from the restored `memos` rows: the
+ * counters are derived, and recomputing them is one grouped INSERT rather than
+ * a replay that could disagree with the dumps' memos.
  */
 export const POST_RESTORE_DERIVED_SQL = [
   "-- Recreate durable embedding work from D1 source rows; Vectorize is derived.",
@@ -107,6 +118,22 @@ export const POST_RESTORE_DERIVED_SQL = [
     "SELECT 'restore:memory:' || `id`, `user_id`, 'memory', `id`, 'reindex', 'pending',",
     `       0, ${restoreNow}, NULL, NULL, ${restoreNow}, ${restoreNow}`,
     "FROM `memory_items` WHERE `status` = 'active' AND `verification` != 'inferred';",
+  ].join(" "),
+  "-- Rebuild the per-author activity counters from the restored memos.",
+  "DELETE FROM `memo_hourly_counts`;",
+  [
+    "INSERT INTO `memo_hourly_counts`",
+    "(`user_id`, `utc_hour`, `normal_count`, `archived_count`, `trashed_count`, `updated_at`)",
+    "SELECT `user_id`, substr(`created_at`, 1, 13),",
+    "       sum(CASE WHEN `status` = 'normal' THEN 1 ELSE 0 END),",
+    "       sum(CASE WHEN `status` = 'archived' THEN 1 ELSE 0 END),",
+    "       sum(CASE WHEN `status` = 'trashed' THEN 1 ELSE 0 END),",
+    `       ${restoreNow}`,
+    "FROM `memos` WHERE `created_at` IS NOT NULL",
+    "GROUP BY `user_id`, substr(`created_at`, 1, 13)",
+    // Buckets whose counters all landed on zero are tombstones the write path
+    // prunes anyway; the domain read path treats a missing row as zero.
+    "HAVING sum(CASE WHEN `status` IN ('normal', 'archived', 'trashed') THEN 1 ELSE 0 END) > 0;",
   ].join(" "),
 ];
 

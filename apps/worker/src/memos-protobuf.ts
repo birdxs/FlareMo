@@ -35,10 +35,7 @@ import { AttachmentService } from "./memos-generated/api/v1/attachment_service_p
 import { AuthService } from "./memos-generated/api/v1/auth_service_pb";
 import { IdentityProviderService } from "./memos-generated/api/v1/idp_service_pb";
 import { InstanceService } from "./memos-generated/api/v1/instance_service_pb";
-import {
-  MemoSchema,
-  MemoService,
-} from "./memos-generated/api/v1/memo_service_pb";
+import { MemoService } from "./memos-generated/api/v1/memo_service_pb";
 import { ShortcutService } from "./memos-generated/api/v1/shortcut_service_pb";
 import { UserService } from "./memos-generated/api/v1/user_service_pb";
 

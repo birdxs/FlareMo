@@ -3,7 +3,7 @@
  * four views. The day-key helpers are re-exported from lib/time-horizon so a
  * view has one import site for everything it needs.
  */
-import type { MemoStatsResponse } from "@/api";
+import type { MemoSpace, MemoStatsResponse } from "@/api";
 
 export type TimeHorizonTab = "year" | "month" | "week" | "day";
 export type DisplayMode = "calendar" | "heatmap";
@@ -11,7 +11,9 @@ export type DisplayMode = "calendar" | "heatmap";
 export type FlareMoTimeHorizonProps = {
   stats: MemoStatsResponse;
   streak: number;
-  monthLabels: Array<{ date: string; label: string }>;
+  /** Viewer's IANA zone: the year view anchors its own stats query with it. */
+  timeZone: string;
+  space?: MemoSpace;
   onDaySelect?: (day: string) => void;
   onNavigate?: () => void;
   hoveredDate?: string | null;

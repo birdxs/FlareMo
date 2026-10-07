@@ -14,7 +14,7 @@ import {
 // the client's serialization/compression choice, and Workers has no
 // synchronous gzip for the 100 ms audio frames.
 const WS_URL = "https://openspeech.bytedance.com/api/v3/sauc/bigmodel_async";
-const RESOURCE_ID = "volc.bigasr.sauc.duration";
+const _RESOURCE_ID = "volc.bigasr.sauc.duration";
 
 const MESSAGE_FULL_CLIENT_REQUEST = 0b0001;
 const MESSAGE_AUDIO_ONLY_REQUEST = 0b0010;

@@ -118,6 +118,7 @@ const messages = {
   "search.syntaxHint":
     "筛选：has:attachment · is:pinned · before:2026-07-01 · after:2026-07-01 · in:archive",
   "common.clearFilters": "清除筛选",
+  "common.emailInUse": "该邮箱已被使用，请换一个。",
   "filter.clearDate": "清除这一天的筛选",
   "common.save": "保存",
   "common.cancel": "取消",
@@ -148,6 +149,7 @@ const messages = {
   "nav.dailyReview": "往年今日",
   "nav.randomWalk": "记忆漫游",
   "nav.memory": "记忆",
+  "nav.teamProjects": "团队项目",
   "nav.projects": "项目",
   "nav.capture": "语音记录",
   "capture.title": "语音记录",

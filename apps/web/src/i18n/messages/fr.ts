@@ -128,6 +128,8 @@ const messages = {
   "search.syntaxHint":
     "Filtres : has:attachment · is:pinned · before:2026-07-01 · after:2026-07-01 · in:archive",
   "common.clearFilters": "Effacer les filtres",
+  "common.emailInUse":
+    "Cette adresse e-mail est déjà utilisée. Choisissez-en une autre.",
   "filter.clearDate": "Retirer le filtre de ce jour",
   "common.save": "Enregistrer",
   "common.cancel": "Annuler",
@@ -159,6 +161,7 @@ const messages = {
   "nav.dailyReview": "Ce jour-là",
   "nav.randomWalk": "Balade",
   "nav.memory": "Mémoire",
+  "nav.teamProjects": "Team projects",
   "nav.projects": "Projets",
   "nav.capture": "Capture vocale",
   "capture.title": "Capture vocale",

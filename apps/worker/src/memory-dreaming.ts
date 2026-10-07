@@ -1,6 +1,5 @@
 import { createDb, memos, users } from "@flaremo/db";
 import {
-  type DreamingConflict,
   type DreamingExtractor,
   type DreamingSource,
   proposeDreamingConflicts,
@@ -218,7 +217,7 @@ async function listDreamingUsers(db: ReturnType<typeof createDb>) {
 
 export async function runMemoryDreaming(
   env: FlareMoEnv,
-  now = new Date(),
+  _now = new Date(),
 ): Promise<{ usersScanned: number; proposals: number }> {
   if (env.FLAREMO_MEMORY_DREAMING === "off" || !env.AI) {
     return { usersScanned: 0, proposals: 0 };

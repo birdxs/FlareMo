@@ -131,7 +131,7 @@ async function setVerification(
     verification === "confirmed" || verification === "locked";
 
   let retired: Awaited<ReturnType<typeof retireActiveFactForKey>> = null;
-  const supersededEvent: Promise<unknown> = Promise.resolve();
+  const _supersededEvent: Promise<unknown> = Promise.resolve();
   if (wasInferred && becomesHuman && existing.factKey) {
     retired = await retireActiveFactForKey(
       db,

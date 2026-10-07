@@ -94,6 +94,8 @@ export async function getMemoStats(
   timeZone: string,
   space?: MemoSpace,
   days?: number,
+  until?: string,
+  signal?: AbortSignal,
 ) {
   const query = new URLSearchParams({ time_zone: timeZone });
   if (space && space !== "all") query.set("space", space);
@@ -103,7 +105,12 @@ export async function getMemoStats(
   // the year grid meaningful. `counts` and `active_days` do not depend on the
   // window, so a wider activity array costs the sidebar nothing.
   if (days !== undefined) query.set("days", String(days));
-  return apiRequest<MemoStatsResponse>(`/api/app/stats?${query.toString()}`);
+  // `until` anchors the window's end: the year view passes the navigated
+  // year's Dec 31 so a historical year reaches its own cells (issue #144).
+  if (until !== undefined) query.set("until", until);
+  return apiRequest<MemoStatsResponse>(`/api/app/stats?${query.toString()}`, {
+    signal,
+  });
 }
 
 /**

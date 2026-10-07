@@ -159,7 +159,7 @@ describe("FlareMo export and import tasks", () => {
     expect(sent).toEqual([{ taskId: createdBody.task.id }]);
 
     const acked: string[] = [];
-    await app.queue!(
+    await app.queue?.(
       {
         queue: "flaremo-data-export",
         retryAll: () => {},

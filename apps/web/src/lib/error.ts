@@ -25,3 +25,14 @@ export function isUntrustedOriginError(error: unknown): boolean {
     status === 403 && typeof message === "string" && /origin/i.test(message)
   );
 }
+
+/**
+ * Whether a failure is the Worker's "email already in use" conflict. Both the
+ * member-creation and email-change endpoints answer 409 from the domain's
+ * ConflictError, so callers map one status to one localized message instead of
+ * surfacing the server's English text.
+ */
+export function isEmailInUseError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  return "status" in error && error.status === 409;
+}

@@ -118,6 +118,18 @@ export const memoStatsQuerySchema = z.object({
    * one request cannot ask for an unbounded range.
    */
   days: z.coerce.number().int().min(1).max(366).default(84),
+  /**
+   * Local date (viewer's zone, YYYY-MM-DD) anchoring the END of the trailing
+   * `activity` window. Absent means today. The year view passes the navigated
+   * year's Dec 31 so a historical year renders its own cells instead of
+   * sharing the trailing-today window, which covers at most its tail (issue
+   * #144). Format-validated only: a future anchor just renders structural
+   * zeros, the same shape the current year's grid already shows past today.
+   */
+  until: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 });
 
 export const dailyReviewQuerySchema = z.object({

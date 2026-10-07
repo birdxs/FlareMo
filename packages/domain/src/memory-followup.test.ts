@@ -17,7 +17,6 @@ import {
   compileCoreMemory,
   confirmMemory,
   createMemory,
-  DAILY_PROPOSAL_QUOTA_DEFAULT,
   DREAMING_AUTO_APPLY_MIN_CONFIDENCE,
   extractAndProposeDreamingFact,
   getLatestCompileArchive,

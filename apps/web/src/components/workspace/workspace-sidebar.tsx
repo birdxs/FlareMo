@@ -9,6 +9,7 @@ import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import type {
   CurrentFlareMoUser,
+  MemoSpace,
   MemoStatsResponse,
   TagHierarchyNode,
 } from "@/api";
@@ -33,6 +34,10 @@ export type WorkspaceSidebarContent = {
   hierarchy: TagHierarchyNode[];
   hierarchyPending: boolean;
   stats: MemoStatsResponse;
+  /** Viewer's IANA zone + space scope: the year view anchors its own stats
+   * query with them (issue #144). */
+  timeZone: string;
+  space?: MemoSpace;
   untagged: boolean;
   user: CurrentFlareMoUser | undefined;
   onDeleteTag: (tag: string) => void;
@@ -71,7 +76,9 @@ function WorkspaceExplorerPanel({
   onToggleCollapsed,
   onUntaggedChange,
   showCollapse = false,
+  space,
   stats,
+  timeZone,
   untagged,
   user,
 }: WorkspaceExplorerPanelProps) {
@@ -179,7 +186,9 @@ function WorkspaceExplorerPanel({
       header={header}
       headerAction={headerAction}
       footer={footer}
+      space={space}
       stats={stats}
+      timeZone={timeZone}
       hierarchy={hierarchy}
       hierarchyPending={hierarchyPending}
       untagged={untagged}

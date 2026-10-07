@@ -17,6 +17,7 @@ import type { Context } from "hono";
 import type { HonoBindings } from "../context";
 import {
   CompatValidationError,
+  controlledErrorStatus,
   isBetterAuthCredentialError,
   isDomainError,
   isRecord,
@@ -67,7 +68,7 @@ function currentErrorMessage(error: unknown) {
   // caller-facing messages alongside their status. Everything else without a
   // domain type — D1 failures, TypeErrors — stays generic so internal
   // details never reach the response body.
-  if (isRecord(error) && controlledErrorStatus(error) !== null) {
+  if (controlledErrorStatus(error) !== null) {
     const message = (error as { message?: unknown }).message;
     if (typeof message === "string" && message) return message;
   }
@@ -81,16 +82,6 @@ function currentErrorMessage(error: unknown) {
       .join("; ");
   }
   return "Internal server error";
-}
-
-function controlledErrorStatus(error: Record<string, unknown>): number | null {
-  const status =
-    typeof error.statusCode === "number"
-      ? error.statusCode
-      : typeof error.status === "number"
-        ? error.status
-        : null;
-  return status !== null && status < 500 ? status : null;
 }
 
 /** Protobuf status codes: INVALID_ARGUMENT=3, NOT_FOUND=5, ALREADY_EXISTS=6,

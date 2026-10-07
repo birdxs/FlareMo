@@ -56,6 +56,7 @@ export type WorkspaceLayoutProps = {
   mainRef?: RefObject<HTMLElement | null>;
   onScroll?: (event: UIEvent<HTMLElement>) => void;
   maxWidthClass?: string;
+  outerMaxWidthClass?: string;
 };
 
 export function WorkspaceLayout({
@@ -64,6 +65,7 @@ export function WorkspaceLayout({
   mainRef,
   onScroll,
   maxWidthClass = "max-w-[640px]",
+  outerMaxWidthClass = "max-w-[950px]",
 }: WorkspaceLayoutProps) {
   const navigate = useNavigate();
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
@@ -133,7 +135,9 @@ export function WorkspaceLayout({
     return {
       hierarchy: tagHierarchyQuery.data?.tags ?? [],
       hierarchyPending: tagHierarchyQuery.isPending,
+      space: "all",
       stats,
+      timeZone,
       untagged: false,
       user: currentUserQuery.data,
       onDeleteTag: (tag) => deleteTag(tag),
@@ -160,6 +164,9 @@ export function WorkspaceLayout({
     tagHierarchyQuery.data,
     tagHierarchyQuery.isPending,
     stats,
+    // Read into the sidebar content below; omitting it left the sidebar on a
+    // stale zone after the viewer changed their time zone.
+    timeZone,
     currentUserQuery.data,
     deleteTagMutation.mutate,
     renameTagMutation.mutate,
@@ -171,7 +178,7 @@ export function WorkspaceLayout({
 
   return (
     <div className="h-svh overflow-hidden bg-background">
-      <div className="mx-auto flex h-full w-full max-w-[950px]">
+      <div className={cn("mx-auto flex h-full w-full", outerMaxWidthClass)}>
         <WorkspaceSidebar
           collapsed={sidebarCollapsed}
           explorer={sidebarContent}

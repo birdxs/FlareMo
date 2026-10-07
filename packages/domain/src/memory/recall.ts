@@ -1,17 +1,7 @@
 import type { MemoryEvidenceDto } from "@flaremo/contracts";
 import type { FlareMoDb, MemoryItemRow, UserRow } from "@flaremo/db";
 import { memoryEvidence, memoryItems, memoryRelations } from "@flaremo/db";
-import {
-  and,
-  desc,
-  eq,
-  inArray,
-  isNull,
-  lte,
-  or,
-  type SQL,
-  sql,
-} from "drizzle-orm";
+import { and, desc, eq, inArray, or, type SQL, sql } from "drizzle-orm";
 import { memoryEvidenceToDto } from "./dto";
 import {
   buildFtsCondition,

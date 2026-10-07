@@ -1,6 +1,11 @@
 import { importBundleSchema } from "@flaremo/contracts";
-import { applyFlaremoMigrations, createDb, memos } from "@flaremo/db";
-import { eq } from "drizzle-orm";
+import {
+  applyFlaremoMigrations,
+  createDb,
+  memoHourlyCounts,
+  memos,
+} from "@flaremo/db";
+import { eq, sql } from "drizzle-orm";
 import { Miniflare } from "miniflare";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { importData } from "./import-export";
@@ -15,6 +20,7 @@ import {
   recalibrateAllHourlyCounts,
   utcHourOf,
 } from "./memo-hourly-counts";
+import { createMemoComment } from "./memos-comments";
 import { hardDeleteMemo } from "./memos-lifecycle";
 import { createDateKeyFormatter } from "./memos-query";
 import { getMemoStats } from "./memos-read";
@@ -306,6 +312,142 @@ describe("counter maintenance through the write paths", () => {
   });
 });
 
+describe("comments move the counter", () => {
+  // A comment is a `memos` row with no column of its own, so every query that
+  // counts memos counts comments too. The counter has to agree with that or
+  // the sidebar under-reports every comment until the nightly rebuild — and a
+  // comment that is then trashed or deleted debits a unit it was never
+  // credited, which the `max(0, …)` floor absorbs by eating a real memo's
+  // count instead. That failure is silent, so it is pinned here.
+
+  it("credits a comment on creation", async () => {
+    const parent = await createMemo(db, owner, {
+      content: "parent",
+      visibility: "private",
+      source: "web",
+    });
+    const before = await readHourlyCountTotals(db, owner.id);
+
+    await createMemoComment(db, owner, parent.id, { content: "a comment" });
+
+    const after = await readHourlyCountTotals(db, owner.id);
+    expect(after.normal).toBe(before.normal + 1);
+    expect(after).toEqual(await liveTotals(owner.id));
+  });
+
+  it("credits a comment that carries tags", async () => {
+    // The tagged branch of `createMemoComment` is a separate `db.batch`, so it
+    // can drift independently of the plain one.
+    const parent = await createMemo(db, owner, {
+      content: "parent",
+      visibility: "private",
+      source: "web",
+    });
+    const before = await readHourlyCountTotals(db, owner.id);
+
+    await createMemoComment(db, owner, parent.id, {
+      content: "tagged comment #insight",
+    });
+
+    const after = await readHourlyCountTotals(db, owner.id);
+    expect(after.normal).toBe(before.normal + 1);
+    expect(after).toEqual(await liveTotals(owner.id));
+  });
+
+  it("keeps the parent memo's count when a comment is trashed", async () => {
+    // The regression this pins: the comment was never credited, so trashing it
+    // issued a debit against a counter that had no matching credit, and the
+    // floor silently zeroed the *parent's* count instead.
+    const parent = await createMemo(db, owner, {
+      content: "parent",
+      visibility: "private",
+      source: "web",
+    });
+    const comment = await createMemoComment(db, owner, parent.id, {
+      content: "a comment",
+    });
+
+    await updateMemo(db, owner, comment.id, { status: "trashed" });
+
+    const totals = await readHourlyCountTotals(db, owner.id);
+    expect(totals).toEqual(await liveTotals(owner.id));
+    expect(totals.normal).toBe(1); // the parent, still there
+    expect(totals.trashed).toBe(1); // the comment
+  });
+
+  it("restores a trashed comment back into the normal count", async () => {
+    const parent = await createMemo(db, owner, {
+      content: "parent",
+      visibility: "private",
+      source: "web",
+    });
+    const comment = await createMemoComment(db, owner, parent.id, {
+      content: "a comment",
+    });
+    await updateMemo(db, owner, comment.id, { status: "trashed" });
+    await updateMemo(db, owner, comment.id, { status: "normal" });
+
+    const totals = await readHourlyCountTotals(db, owner.id);
+    expect(totals).toEqual(await liveTotals(owner.id));
+    expect(totals.normal).toBe(2);
+    expect(totals.trashed).toBe(0);
+  });
+
+  it("removes a hard-deleted comment without disturbing the parent", async () => {
+    const parent = await createMemo(db, owner, {
+      content: "parent",
+      visibility: "private",
+      source: "web",
+    });
+    const comment = await createMemoComment(db, owner, parent.id, {
+      content: "a comment",
+    });
+
+    await hardDeleteMemo(db, owner, comment.id);
+
+    const totals = await readHourlyCountTotals(db, owner.id);
+    expect(totals).toEqual(await liveTotals(owner.id));
+    expect(totals.normal).toBe(1);
+  });
+
+  it("survives a mixed sequence of memos and comments", async () => {
+    const parent = await createMemo(db, owner, {
+      content: "parent",
+      visibility: "private",
+      source: "web",
+    });
+    const second = await createMemo(db, owner, {
+      content: "second",
+      visibility: "private",
+      source: "web",
+    });
+    const comment = await createMemoComment(db, owner, parent.id, {
+      content: "a comment",
+    });
+    await updateMemo(db, owner, second.id, { status: "archived" });
+    await updateMemo(db, owner, comment.id, { status: "trashed" });
+
+    const totals = await readHourlyCountTotals(db, owner.id);
+    expect(totals).toEqual(await liveTotals(owner.id));
+    expect(totals).toMatchObject({ normal: 1, archived: 1, trashed: 1 });
+  });
+
+  it("reports the same total through getMemoStats as a live scan", async () => {
+    const parent = await createMemo(db, owner, {
+      content: "parent",
+      visibility: "private",
+      source: "web",
+    });
+    await createMemoComment(db, owner, parent.id, { content: "a comment" });
+
+    const stats = await getMemoStats(db, owner, { time_zone: "UTC" });
+    const live = await liveTotals(owner.id);
+    expect(stats.counts.normal).toBe(live.normal);
+    expect(stats.counts.total).toBe(live.normal + live.archived);
+    expect(stats.active_days).toBe(live.activeDays);
+  });
+});
+
 describe("getMemoStats own-corpus read path", () => {
   it("reproduces the live counts and active_days", async () => {
     await seedMemo({ id: "a", createdAt: "2026-01-05T10:00:00.000Z" });
@@ -489,6 +631,43 @@ describe("recalibration", () => {
     expect(await readHourlyCountTotals(db, owner.id)).toEqual(
       await liveTotals(owner.id),
     );
+  });
+
+  it("rebuilds a user whose counter spans more than one insert chunk", async () => {
+    // D1 caps a query at 100 bound parameters and each counter row binds six,
+    // so the rebuild has to chunk at 16 rows. An earlier chunk size of 200
+    // looked safe but overflowed the moment a user had more than 16 active
+    // UTC hours — which is every instance with any history at all. The throw
+    // happened before the sweep, so the nightly job failed *and* left the
+    // counter unrepaired. The other tests here seed a handful of memos and
+    // never crossed the boundary, which is why this went unnoticed.
+    const HOURS = 40;
+    for (let hour = 0; hour < HOURS; hour += 1) {
+      // Distinct UTC hours, spread across days — the bucket count has to equal
+      // the memo count or the test never crosses the chunk boundary.
+      const createdAt = new Date(
+        Date.UTC(2026, 0, 1 + Math.floor(hour / 24), hour % 24, 0, 0),
+      ).toISOString();
+      await seedMemo({
+        id: `memos/chunky-${String(hour).padStart(3, "0")}`,
+        createdAt,
+      });
+    }
+
+    await recalibrateAllHourlyCounts(db, new Date().toISOString());
+
+    // Assert the premise, not just the outcome: if the seed ever collapses
+    // into fewer buckets this test would silently stop covering the boundary
+    // it exists to guard.
+    const bucketCount = await db
+      .select({ c: sql<number>`count(*)`.mapWith(Number) })
+      .from(memoHourlyCounts)
+      .get();
+    expect(bucketCount?.c).toBe(HOURS);
+
+    const totals = await readHourlyCountTotals(db, owner.id);
+    expect(totals).toEqual(await liveTotals(owner.id));
+    expect(totals.normal).toBe(HOURS);
   });
 
   it("drops tombstones left by a fully drained bucket", async () => {

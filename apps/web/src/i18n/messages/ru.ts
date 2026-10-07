@@ -127,6 +127,7 @@ const messages = {
   "search.syntaxHint":
     "Фильтры: has:attachment · is:pinned · before:2026-07-01 · after:2026-07-01 · in:archive",
   "common.clearFilters": "Сбросить фильтры",
+  "common.emailInUse": "Эта почта уже используется. Укажите другую.",
   "filter.clearDate": "Убрать фильтр по этому дню",
   "common.save": "Сохранить",
   "common.cancel": "Отмена",
@@ -158,6 +159,7 @@ const messages = {
   "nav.dailyReview": "В этот день",
   "nav.randomWalk": "Прогулка по памяти",
   "nav.memory": "Память",
+  "nav.teamProjects": "Team projects",
   "nav.projects": "Проекты",
   "nav.capture": "Голосовая запись",
   "capture.title": "Голосовая запись",

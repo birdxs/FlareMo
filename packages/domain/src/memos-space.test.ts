@@ -1,6 +1,8 @@
-import { applyFlaremoMigrations, createDb } from "@flaremo/db";
+import { applyFlaremoMigrations, createDb, memos } from "@flaremo/db";
+import { eq } from "drizzle-orm";
 import { Miniflare } from "miniflare";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { recalibrateUserHourlyCounts } from "./memo-hourly-counts";
 import {
   createMemo,
   getMemoById,
@@ -161,26 +163,26 @@ describe("listMemosForViewer space scoping", () => {
 });
 
 describe("space-scoped stats and tags", () => {
-  let ownPrivate: string;
-  let ownTeam: string;
-  let otherTeam: string;
+  let _ownPrivate: string;
+  let _ownTeam: string;
+  let _otherTeam: string;
 
   beforeEach(async () => {
-    ownPrivate = (
+    _ownPrivate = (
       await createMemo(db, member, {
         content: "personal #space-tags",
         visibility: "private",
         source: "web",
       })
     ).id;
-    ownTeam = (
+    _ownTeam = (
       await createMemo(db, member, {
         content: "own team #space-tags",
         visibility: "protected",
         source: "web",
       })
     ).id;
-    otherTeam = (
+    _otherTeam = (
       await createMemo(db, owner, {
         content: "owner team #space-tags",
         visibility: "protected",
@@ -295,5 +297,74 @@ describe("updateMemo tag re-extraction", () => {
     expect(edited.payload.tags).toEqual(["imported-tag"]);
     const tree = await listTagHierarchy(db, member, {});
     expect(tree.map((node) => node.name)).toEqual(["imported-tag"]);
+  });
+});
+
+describe("getMemoStats until anchor", () => {
+  it("anchors the activity window at the requested date for the counter path", async () => {
+    // A backdated memo (imported history) lands years outside the trailing
+    // window; the counter is rebuilt from `memos` so the stats read sees it.
+    const memo = await createMemo(db, member, {
+      content: "imported 2019 note",
+      visibility: "private",
+      source: "web",
+    });
+    await db
+      .update(memos)
+      .set({
+        createdAt: "2019-09-20T10:00:00.000Z",
+        updatedAt: "2019-09-20T10:00:00.000Z",
+      })
+      .where(eq(memos.id, memo.id));
+    await recalibrateUserHourlyCounts(db, member.id, new Date().toISOString());
+
+    const anchored = await getMemoStats(db, member, {
+      time_zone: "UTC",
+      days: 366,
+      until: "2019-12-31",
+    });
+    expect(anchored.activity.at(-1)?.date).toBe("2019-12-31");
+    expect(anchored.activity.find((d) => d.date === "2019-09-20")?.count).toBe(
+      1,
+    );
+
+    // Default (no anchor) still ends today, and the 2019 note stays outside
+    // the trailing window.
+    const trailing = await getMemoStats(db, member, {
+      time_zone: "UTC",
+      days: 366,
+    });
+    expect(trailing.activity.at(-1)?.date).toBe(
+      new Date().toISOString().slice(0, 10),
+    );
+    expect(
+      trailing.activity.find((d) => d.date === "2019-09-20"),
+    ).toBeUndefined();
+  });
+
+  it("anchors the live space-partitioned path the same way", async () => {
+    const memo = await createMemo(db, member, {
+      content: "imported team note",
+      visibility: "protected",
+      source: "web",
+    });
+    await db
+      .update(memos)
+      .set({
+        createdAt: "2019-09-20T10:00:00.000Z",
+        updatedAt: "2019-09-20T10:00:00.000Z",
+      })
+      .where(eq(memos.id, memo.id));
+
+    const anchored = await getMemoStats(
+      db,
+      member,
+      { time_zone: "UTC", days: 366, until: "2019-12-31" },
+      { space: "team" },
+    );
+    expect(anchored.activity.at(-1)?.date).toBe("2019-12-31");
+    expect(anchored.activity.find((d) => d.date === "2019-09-20")?.count).toBe(
+      1,
+    );
   });
 });

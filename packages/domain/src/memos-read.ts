@@ -368,15 +368,15 @@ async function getOwnCorpusMemoStats(
   user: TeamViewer,
   input: {
     formatLocalDate: (date: Date) => string;
-    todayKey: string;
+    anchorKey: string;
     days: number;
   },
 ): Promise<MemoStatsResponse> {
-  const { formatLocalDate, todayKey, days } = input;
+  const { formatLocalDate, anchorKey, days } = input;
   const wantedDates = new Set(
-    buildActivity(todayKey, new Map(), days).map((day) => day.date),
+    buildActivity(anchorKey, new Map(), days).map((day) => day.date),
   );
-  const { fromHour, toHour } = hourRangeForLocalWindow(todayKey, days);
+  const { fromHour, toHour } = hourRangeForLocalWindow(anchorKey, days);
   const [totals, hourRows, tagRows] = await Promise.all([
     readHourlyCountTotals(db, user.id),
     readHourlyCountsInRange(db, user.id, fromHour, toHour),
@@ -400,7 +400,7 @@ async function getOwnCorpusMemoStats(
     },
     active_days: totals.activeDays,
     tags: tagRows,
-    activity: buildActivity(todayKey, localCounts, days),
+    activity: buildActivity(anchorKey, localCounts, days),
   };
 }
 
@@ -411,7 +411,11 @@ export async function getMemoStats(
   options: MemoStatsOptions = {},
 ): Promise<MemoStatsResponse> {
   const dateKeyFormatter = createDateKeyFormatter(query.time_zone ?? "UTC");
-  const todayKey = dateKeyFormatter(new Date());
+  // The activity window ends on the client-supplied anchor when present (the
+  // year view requests the navigated year's Dec 31 so historical years render
+  // their own cells, issue #144); otherwise today. `counts` and `active_days`
+  // are all-time and deliberately unaffected by the anchor.
+  const anchorKey = query.until ?? dateKeyFormatter(new Date());
   // Clamped again here because the schema is not the only caller. The
   // `Number.isFinite` guard matters: a NaN would survive Math.min/Math.max
   // (both propagate it) and then blow up inside `toISOString()` on an Invalid
@@ -428,7 +432,7 @@ export async function getMemoStats(
   if (!options.space) {
     return getOwnCorpusMemoStats(db, user, {
       formatLocalDate: dateKeyFormatter,
-      todayKey,
+      anchorKey,
       days,
     });
   }
@@ -436,8 +440,14 @@ export async function getMemoStats(
   const corpus = scopedReadScope(user, options.space);
   const normalOrArchived = inArray(memos.status, ["normal", "archived"]);
   // A local-day window can start up to 15 hours before its first UTC day, so
-  // the raw-row cutoff is padded to match `hourRangeForLocalWindow`.
-  const recentCutoff = new Date(Date.now() - (days + 1) * 24 * 60 * 60 * 1000);
+  // the raw-row cutoff is padded to match `hourRangeForLocalWindow` (+1 day
+  // covers that pad). Anchored at the window's end day, not at now, so a
+  // historical anchor reaches back into its own year.
+  const anchorUtcStart = new Date(`${anchorKey}T00:00:00Z`).getTime();
+  const recentCutoff = new Date(
+    (Number.isNaN(anchorUtcStart) ? Date.now() : anchorUtcStart) -
+      (days + 1) * 24 * 60 * 60 * 1000,
+  );
 
   const [countRow, tagRows, activeDayRows, recentRows, spaceCountRows] =
     await Promise.all([
@@ -528,7 +538,7 @@ export async function getMemoStats(
     },
     active_days: activeDayRows.length,
     tags: tagRows,
-    activity: buildActivity(todayKey, activityCounts, days),
+    activity: buildActivity(anchorKey, activityCounts, days),
   };
 }
 

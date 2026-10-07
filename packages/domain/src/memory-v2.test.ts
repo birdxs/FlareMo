@@ -4,10 +4,7 @@ import {
   createDb,
   memoryEvents,
   memoryEvidence,
-  memoryItems,
-  memoryRejections,
   memoryRelations,
-  memoryRevisions,
 } from "@flaremo/db";
 import { eq } from "drizzle-orm";
 import { Miniflare } from "miniflare";
@@ -20,16 +17,12 @@ import {
   getMemory,
   getMemoryLineage,
   hardDeleteMemory,
-  isRejectedRecently,
-  listMemories,
   listMemoryEvidence,
   listMemoryReview,
-  lockMemory,
   type MemoryActor,
   recallMemories,
   resolveProposal,
   restoreMemory,
-  splitMemoryKey,
 } from "./memory";
 import { ensureSingleUser } from "./users";
 
@@ -441,7 +434,7 @@ describe("Memory Ledger v2 Architecture & Acceptance Tests", () => {
   });
 
   it("Acceptance 9: Lineage tree retrieves full version history, revisions, events, and evidence", async () => {
-    const v1 = await createMemory(db, user, AGENT, {
+    const _v1 = await createMemory(db, user, AGENT, {
       content: "初代架构：使用 Express",
       factKey: "server.framework",
       type: "semantic",
