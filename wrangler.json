@@ -89,15 +89,15 @@
     "crons": ["17 3 * * *"]
   },
   "vars": {
-    "FLAREMO_DEPLOY_REPOSITORY": "",
+    "FLAREMO_DEPLOY_REPOSITORY": "birdxs/FlareMo",
+    "FLAREMO_EMBEDDING_DIMENSIONS": "1024",
+    "FLAREMO_EMBEDDING_MODEL": "@cf/qwen/qwen3-embedding-0.6b",
+    "FLAREMO_EMBEDDING_PROVIDER": "workers-ai",
+    "FLAREMO_PUBLIC_URL": "https://flaremo.birdxs.eu.org",
     "FLAREMO_SINGLE_USER_EMAIL": "owner@flaremo.local",
     "FLAREMO_SINGLE_USER_NAME": "FlareMo Owner",
-    "FLAREMO_PUBLIC_URL": "https://flaremo.example.workers.dev",
-    "FLAREMO_TRUSTED_ORIGINS": "",
-    "FLAREMO_EMBEDDING_PROVIDER": "workers-ai",
-    "FLAREMO_EMBEDDING_MODEL": "@cf/qwen/qwen3-embedding-0.6b",
-    "FLAREMO_EMBEDDING_DIMENSIONS": "1024",
-    "FLAREMO_VECTORIZE_STORED_LIMIT": "5000000",
-    "FLAREMO_VECTORIZE_QUERIED_LIMIT": "30000000"
+    "FLAREMO_TRUSTED_ORIGINS": "https://flaremo.birdxs.eu.org,https://flaremo.birdxs.workers.dev",
+    "FLAREMO_VECTORIZE_QUERIED_LIMIT": "30000000",
+    "FLAREMO_VECTORIZE_STORED_LIMIT": "5000000"
   }
 }
