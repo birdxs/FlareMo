@@ -39,6 +39,16 @@ export function ProjectsPage() {
       listTasks(selected === ALL_TASKS ? {} : { project_id: selected }),
   });
 
+  // The sidebar badge is labelled "全部任务", so it must count that set even
+  // while a single project is selected. Disabled on the all-tasks board, where
+  // `tasksQuery` already holds the same rows under this exact key — a second
+  // subscription would just be a no-op observer.
+  const allTasksQuery = useQuery({
+    queryKey: queryKeys.tasks.all,
+    queryFn: () => listTasks(),
+    enabled: selected !== ALL_TASKS,
+  });
+
   const projects = useMemo(
     () => projectsQuery.data?.projects ?? [],
     [projectsQuery.data],
@@ -59,9 +69,16 @@ export function ProjectsPage() {
 
   const selectedProject =
     selected === ALL_TASKS ? null : (projectById.get(selected) ?? null);
-  const openCount = projects.reduce(
-    (sum, project) => sum + project.task_count_open,
-    0,
+  // Counted from task rows rather than summed from per-project
+  // `task_count_open`: that sum only covers project-bound tasks, so a board
+  // holding unassigned ones advertised "全部任务 0" above four visible cards.
+  const openCount = useMemo(
+    () =>
+      (allTasksQuery.data?.tasks ?? []).reduce(
+        (sum, task) => sum + (task.status === "done" ? 0 : 1),
+        0,
+      ),
+    [allTasksQuery.data],
   );
 
   // A deleted (or otherwise vanished) project must never leave the board
@@ -75,7 +92,7 @@ export function ProjectsPage() {
 
   return (
     <WorkspaceLayout
-      maxWidthClass="max-w-5xl"
+      contentMaxWidth={1024}
       header={({
         sidebarCollapsed,
         toggleSidebarCollapsed,
@@ -84,6 +101,7 @@ export function ProjectsPage() {
         explorer,
       }) => (
         <WorkspacePageHeader
+          contentMaxWidth={1024}
           actions={
             <>
               <Button
@@ -104,7 +122,6 @@ export function ProjectsPage() {
           icon={
             <FolderKanbanIcon className="size-4 shrink-0 text-brand-600 dark:text-brand-400" />
           }
-          maxWidthClass="max-w-5xl"
           mobileSheetOpen={mobileSheetOpen}
           setMobileSheetOpen={setMobileSheetOpen}
           sidebarCollapsed={sidebarCollapsed}

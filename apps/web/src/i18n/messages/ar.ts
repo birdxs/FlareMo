@@ -347,6 +347,10 @@ const messages = {
   "list.loadMoreError":
     "تعذر تحميل ملاحظات إضافية. المحتوى المحمّل سابقًا محفوظ.",
   "list.updating": "جارٍ تحديث الملاحظات…",
+  "notFound.title": "الصفحة غير موجودة",
+  "notFound.description":
+    "لا توجد صفحة في هذا العنوان — ربما كان الرابط قديمًا أو مكتوبًا بشكل خاطئ.",
+  "notFound.home": "العودة إلى الرئيسية",
   "list.errorTitle": "تعذر تحميل الملاحظات",
   "list.errorDescription": "تحقق من الاتصال وأعد المحاولة.",
   "list.loadMore": "تحميل المزيد",

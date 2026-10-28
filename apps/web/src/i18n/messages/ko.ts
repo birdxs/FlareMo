@@ -353,6 +353,10 @@ const messages = {
   "list.loadMoreError":
     "추가 노트를 불러오지 못했습니다. 이미 불러온 내용은 유지됩니다.",
   "list.updating": "노트를 업데이트하는 중…",
+  "notFound.title": "페이지를 찾을 수 없습니다",
+  "notFound.description":
+    "이 주소에 해당하는 페이지가 없습니다. 링크가 오래되었거나 잘못되었을 수 있습니다.",
+  "notFound.home": "홈으로 돌아가기",
   "list.errorTitle": "노트를 불러오지 못했습니다",
   "list.errorDescription": "연결을 확인하고 다시 시도해 주세요.",
   "list.loadMore": "더 불러오기",

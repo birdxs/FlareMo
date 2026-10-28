@@ -353,6 +353,10 @@ const messages = {
   "list.loadMoreError":
     "Could not load more notes. Previously loaded notes are still available.",
   "list.updating": "Updating notes…",
+  "notFound.title": "Page not found",
+  "notFound.description":
+    "Nothing lives at this address — the link may be outdated or mistyped.",
+  "notFound.home": "Back to home",
   "list.errorTitle": "Could not load notes",
   "list.errorDescription": "Check your connection and try again.",
   "list.loadMore": "Load more",

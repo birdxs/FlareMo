@@ -361,6 +361,10 @@ const messages = {
   "list.loadMoreError":
     "Impossible de charger plus de notes. Le contenu déjà chargé est conservé.",
   "list.updating": "Mise à jour des notes…",
+  "notFound.title": "Page introuvable",
+  "notFound.description":
+    "Aucune page ne correspond à cette adresse — le lien est peut-être obsolète ou mal saisi.",
+  "notFound.home": "Retour à l'accueil",
   "list.errorTitle": "Impossible de charger les notes",
   "list.errorDescription": "Vérifiez votre connexion et réessayez.",
   "list.loadMore": "Charger plus",

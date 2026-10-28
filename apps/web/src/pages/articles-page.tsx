@@ -96,7 +96,7 @@ export function ArticlesPage() {
 
   return (
     <WorkspaceLayout
-      maxWidthClass="max-w-4xl"
+      contentMaxWidth={896}
       header={({
         sidebarCollapsed,
         toggleSidebarCollapsed,
@@ -105,6 +105,7 @@ export function ArticlesPage() {
         explorer,
       }) => (
         <WorkspacePageHeader
+          contentMaxWidth={896}
           actions={
             <Button
               disabled={createMutation.isPending}
@@ -124,7 +125,6 @@ export function ArticlesPage() {
           icon={
             <FileTextIcon className="size-4 shrink-0 text-brand-600 dark:text-brand-400" />
           }
-          maxWidthClass="max-w-4xl"
           mobileSheetOpen={mobileSheetOpen}
           setMobileSheetOpen={setMobileSheetOpen}
           sidebarCollapsed={sidebarCollapsed}

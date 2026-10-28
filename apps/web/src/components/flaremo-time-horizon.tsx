@@ -265,11 +265,11 @@ export const FlareMoTimeHorizon = memo(function FlareMoTimeHorizon({
     <div className={cn("flex flex-col gap-1.5", className)}>
       {/* ── Top Bar: 4 Tabs + Quick Today Jump ────────────────────────────── */}
       <div className="flex items-center justify-between px-0.5">
-        <div
-          aria-label={t("explorer.timeViewLabel")}
-          className="flex items-center gap-0.5 rounded-lg border border-border/60 bg-muted/40 p-0.5 dark:border-border/40 dark:bg-muted/30"
-          role="tablist"
-        >
+        {/* Toggle buttons, not a tablist: the four options own no `tabpanel` —
+            they swap which calendar body renders — so `role="tab"` promised a
+            panel association that did not exist. `aria-pressed` says the same
+            thing on a real button without inventing the relationship. */}
+        <div className="flex items-center gap-0.5 rounded-lg border border-border/60 bg-muted/40 p-0.5 dark:border-border/40 dark:bg-muted/30">
           {(
             [
               ["year", t("explorer.tab.year")],
@@ -279,7 +279,8 @@ export const FlareMoTimeHorizon = memo(function FlareMoTimeHorizon({
             ] as const
           ).map(([id, label]) => (
             <button
-              aria-selected={tab === id}
+              aria-label={`${t("explorer.timeViewLabel")}: ${label}`}
+              aria-pressed={tab === id}
               className={cn(
                 "min-w-[30px] rounded px-2 py-0.5 text-xs font-medium tabular-nums transition-colors cursor-pointer",
                 tab === id
@@ -287,7 +288,6 @@ export const FlareMoTimeHorizon = memo(function FlareMoTimeHorizon({
                   : "text-muted-foreground hover:text-foreground",
               )}
               key={id}
-              role="tab"
               type="button"
               onClick={() => setTab(id)}
             >

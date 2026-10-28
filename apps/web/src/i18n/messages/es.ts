@@ -359,6 +359,10 @@ const messages = {
   "list.loadMoreError":
     "No se pudieron cargar más notas. El contenido ya cargado se conserva.",
   "list.updating": "Actualizando notas…",
+  "notFound.title": "Página no encontrada",
+  "notFound.description":
+    "No hay ninguna página en esta dirección: puede que el enlace esté caducado o mal escrito.",
+  "notFound.home": "Volver al inicio",
   "list.errorTitle": "No se pudieron cargar las notas",
   "list.errorDescription": "Revisa tu conexión e inténtalo de nuevo.",
   "list.loadMore": "Cargar más",

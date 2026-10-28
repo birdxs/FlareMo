@@ -15,7 +15,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WorkspaceLayout } from "@/components/workspace/workspace-layout";
 import { WorkspacePageHeader } from "@/components/workspace/workspace-page-header";
 import { useI18n } from "@/i18n";
-import { formatMemoTime } from "@/lib/memo";
+import { formatMemoRelativeTime, formatMemoTime, memoTitle } from "@/lib/memo";
 import type { MemoDetailTaskInteraction } from "./memo-detail/content-tab";
 import { ContentTab } from "./memo-detail/content-tab";
 import { HistoryTab } from "./memo-detail/history-tab";
@@ -41,7 +41,7 @@ export function MemoDetailPage({ memoId }: { memoId: string }) {
 
   return (
     <WorkspaceLayout
-      maxWidthClass="max-w-3xl"
+      contentMaxWidth={768}
       header={({
         sidebarCollapsed,
         toggleSidebarCollapsed,
@@ -50,6 +50,7 @@ export function MemoDetailPage({ memoId }: { memoId: string }) {
         explorer,
       }) => (
         <WorkspacePageHeader
+          contentMaxWidth={768}
           actions={
             <Button
               className="h-8 gap-1.5 px-2.5 text-xs text-muted-foreground hover:text-foreground"
@@ -77,13 +78,22 @@ export function MemoDetailPage({ memoId }: { memoId: string }) {
           icon={
             <FileTextIcon className="size-4 shrink-0 text-brand-600 dark:text-brand-400" />
           }
-          maxWidthClass="max-w-3xl"
           mobileSheetOpen={mobileSheetOpen}
           setMobileSheetOpen={setMobileSheetOpen}
           sidebarCollapsed={sidebarCollapsed}
           title={
-            <span className="font-mono text-xs text-muted-foreground">
-              {contextQuery.data?.memo.name ?? memoId}
+            // The note's own opening line, not its resource name: a header
+            // reading `memos/a60cdd29-…` identifies the row to the database
+            // and to nobody else. Falls back to the timestamp for a memo whose
+            // body is only tags or media.
+            <span className="truncate" title={contextQuery.data?.memo.name}>
+              {memoTitle(contextQuery.data?.memo.content ?? "") ||
+                (contextQuery.data
+                  ? formatMemoRelativeTime(
+                      contextQuery.data.memo.create_time,
+                      locale,
+                    )
+                  : t("common.loading"))}
             </span>
           }
           toggleSidebarCollapsed={toggleSidebarCollapsed}

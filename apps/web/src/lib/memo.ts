@@ -136,6 +136,72 @@ export function formatMemoTime(value: string, locale?: string) {
 }
 
 /**
+ * A one-line human handle for a memo, used where the row's identity must be
+ * readable rather than machine-parseable (the detail page header). Drops the
+ * markdown syntax that would render as noise in a single truncated line —
+ * heading hashes, list bullets, task checkboxes, quote marks, emphasis
+ * markers — and the trailing tag run, which the card below already shows as
+ * chips. Returns "" for a memo with no prose, so callers can fall back to a
+ * timestamp instead of rendering an empty heading.
+ */
+export function memoTitle(content: string, maxLength = 80) {
+  const lines = content.split("\n");
+  const isTagLine = (line: string) =>
+    /^\s*(#[^\s#]+[\s,，、]*)+$/.test(line) && !/^\s*#\s/.test(line);
+  // Fenced code is skipped whole: the opening fence would otherwise be
+  // stripped as noise and leave the code's first line masquerading as prose.
+  let inFence = false;
+  let fenceMarker = "";
+  for (const raw of lines) {
+    const fence = raw.match(/^\s{0,3}(`{3,}|~{3,})/)?.[1];
+    if (fence) {
+      if (!inFence) {
+        inFence = true;
+        fenceMarker = fence[0];
+      } else if (fence[0] === fenceMarker) {
+        inFence = false;
+        fenceMarker = "";
+      }
+      continue;
+    }
+    if (inFence) continue;
+    const line = stripInlineMarkdown(
+      raw
+        .replace(/^\s{0,3}#{1,6}\s+/, "")
+        .replace(/^\s*>\s?/, "")
+        .replace(/^\s*[-*+]\s+\[[ xX]\]\s+/, "")
+        .replace(/^\s*[-*+]\s+/, "")
+        .replace(/^\s*\d+\.\s+/, "")
+        .trim(),
+    );
+    if (!line) continue;
+    if (isTagLine(line)) continue;
+    return line.length > maxLength
+      ? `${line.slice(0, maxLength).trimEnd()}…`
+      : line;
+  }
+  return "";
+}
+
+/**
+ * Removes the inline syntax that only reads as syntax when it is *rendered*:
+ * emphasis, strikethrough and inline code. A header is a plain string, so
+ * `**bold**` and `` `code` `` arrive with their delimiters intact and look
+ * like typos. Link text is kept, its URL dropped — the URL is never the
+ * sentence.
+ */
+function stripInlineMarkdown(line: string) {
+  return line
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/`+([^`]+)`+/g, "$1")
+    .replace(/(\*\*|__)(.+?)\1/g, "$2")
+    .replace(/(\*|_)(.+?)\1/g, "$2")
+    .replace(/~~(.+?)~~/g, "$1")
+    .trim();
+}
+
+/**
  * Timeline timestamps read as relative time ("3 hours ago" / "3 小时前")
  * for the past week and fall back to an absolute date beyond that.
  */

@@ -354,6 +354,10 @@ const messages = {
   "list.loadMoreError":
     "それ以上のノートを読み込めませんでした。読み込み済みの内容は保持されています。",
   "list.updating": "ノートを更新しています…",
+  "notFound.title": "ページが見つかりません",
+  "notFound.description":
+    "このアドレスに対応するページはありません。リンクが古いか、誤っている可能性があります。",
+  "notFound.home": "ホームに戻る",
   "list.errorTitle": "ノートを読み込めませんでした",
   "list.errorDescription": "接続を確認して、もう一度お試しください。",
   "list.loadMore": "もっと読み込む",

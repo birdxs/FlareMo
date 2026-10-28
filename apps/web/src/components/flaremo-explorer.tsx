@@ -109,7 +109,14 @@ export const FlareMoExplorer = memo(function FlareMoExplorer({
 
   return (
     <aside className="flex min-h-full flex-col px-3 py-4 text-sm">
-      <header className="mb-5 flex items-center justify-between gap-2 px-1">
+      {/* Sticky so the account menu stays reachable: the tag list routinely
+          runs past the viewport (1481px of content in a 960px column), and
+          scrolling to the bottom used to take the user's own entry point with
+          it. The hairline is what makes that legible — without an edge, a tag
+          clipped by the sticky row reads as a rendering fault rather than as
+          something scrolled underneath. `-mx-3 px-3` covers the column's
+          gutters so tags pass behind the row instead of beside it. */}
+      <header className="sticky top-0 z-10 -mx-3 mb-4 flex items-center justify-between gap-2 border-b border-border/50 bg-background px-4 py-2">
         {header}
         {headerAction}
       </header>

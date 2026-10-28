@@ -35,10 +35,10 @@ export function TeamProjectsPage() {
   );
   return (
     <WorkspaceLayout
-      maxWidthClass="max-w-[1600px]"
-      outerMaxWidthClass="max-w-[1800px]"
+      contentMaxWidth={1600}
       header={(props) => (
         <WorkspacePageHeader
+          contentMaxWidth={1600}
           {...props}
           icon={
             <FolderKanbanIcon
@@ -47,7 +47,6 @@ export function TeamProjectsPage() {
             />
           }
           title={t("nav.teamProjects")}
-          maxWidthClass="max-w-[1600px]"
         />
       )}
     >
