@@ -1,5 +1,12 @@
 import type { Editor } from "@tiptap/react";
-import { memo, useRef, useState } from "react";
+import {
+  type Dispatch,
+  memo,
+  type SetStateAction,
+  useCallback,
+  useRef,
+  useState,
+} from "react";
 import type { Attachment, Memo, MemoVisibility, Share } from "@/api";
 import { MemoCardBody } from "@/components/memo-card/memo-card-body";
 import { MemoCardEditor } from "@/components/memo-card/memo-card-editor";
@@ -38,6 +45,12 @@ type MemoCardProps = {
   onRequestDelete?: (memo: Memo) => void;
   onRequestShareImage?: (memo: Memo) => void;
   onRequestVisibility?: (memo: Memo) => void;
+  /**
+   * Reports whether this card holds unsaved editor state. The virtualized
+   * timeline uses it to keep such a card mounted: unmounting mid-edit would
+   * discard the draft the user is still typing.
+   */
+  onEditingChange?: (memoName: string, editing: boolean) => void;
 };
 
 export const MemoCard = memo(function MemoCard({
@@ -61,6 +74,7 @@ export const MemoCard = memo(function MemoCard({
   onRequestDelete,
   onRequestShareImage,
   onRequestVisibility,
+  onEditingChange,
 }: MemoCardProps) {
   // Expansion is per-card and resets on remount; it outlives an edit
   // round-trip, so it stays above the body/editor switch.
@@ -74,6 +88,21 @@ export const MemoCard = memo(function MemoCard({
   const editEditorRef = useRef<Editor | null>(null);
   const isTrashed = memo.state === "trashed";
 
+  // The virtualized list may unmount a card at any scroll offset. While the
+  // editor is open that would throw away the draft, so every write to
+  // `isEditing` — including the one inside useMemoCardActions' save path —
+  // goes through this wrapper, which reports the state to the list.
+  const setEditing = useCallback<Dispatch<SetStateAction<boolean>>>(
+    (value) => {
+      setIsEditing((previous) => {
+        const next = typeof value === "function" ? value(previous) : value;
+        if (next !== previous) onEditingChange?.(memo.name, next);
+        return next;
+      });
+    },
+    [memo.name, onEditingChange],
+  );
+
   const { changeVisibility, id, prefetchDetail, saveEditing, taskInteraction } =
     useMemoCardActions({
       canManage,
@@ -84,14 +113,17 @@ export const MemoCard = memo(function MemoCard({
       onShare,
       onUpdate,
       share,
-      setIsEditing,
+      setIsEditing: setEditing,
       setIsSaving,
     });
 
   const startEditing = () => {
     setDraftContent(memo.content);
-    setIsEditing(true);
+    setEditing(true);
   };
+
+  const stopEditing = () => setEditing(false);
+  const beginEditing = startEditing;
 
   return (
     <article
@@ -116,7 +148,7 @@ export const MemoCard = memo(function MemoCard({
         onHardDelete={onHardDelete}
         onPin={onPin}
         onRestore={onRestore}
-        onStartEditing={startEditing}
+        onStartEditing={beginEditing}
         onTrash={onTrash}
         share={share}
         onShare={onShare}
@@ -134,7 +166,7 @@ export const MemoCard = memo(function MemoCard({
           setIsUploadingInline={setIsUploadingInline}
           editorRef={editEditorRef}
           memoName={memo.name}
-          onCancel={() => setIsEditing(false)}
+          onCancel={stopEditing}
           onContentChange={setDraftContent}
           onSave={saveEditing}
         />

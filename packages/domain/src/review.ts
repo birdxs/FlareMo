@@ -1,6 +1,18 @@
 import type { FlareMoDb, MemoRow, UserRow } from "@flaremo/db";
 import { memoRelations, memos, memoTags, tasks, users } from "@flaremo/db";
-import { and, asc, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  inArray,
+  isNull,
+  lt,
+  ne,
+  or,
+  sql,
+} from "drizzle-orm";
+import { chunkForD1, d1IdsPerStatement } from "./d1-limits";
 import { ValidationError } from "./errors";
 import { parseResourceName } from "./ids";
 import { getMemoById } from "./memos";
@@ -82,17 +94,39 @@ export async function createDailyReviewNotifications(
   }
   const allUsers = await db.select({ id: users.id }).from(users);
   const activeUserIds = new Set(allUsers.map((user) => user.id));
-  let created = 0;
+  const statements: unknown[] = [];
   for (const [receiverId, anchorId] of anchorByUser) {
     if (!activeUserIds.has(receiverId)) continue;
-    const inserted = await insertMemoNotification(db, {
-      receiverId,
-      senderId: receiverId,
-      type: "daily_review",
-      sourceEventId: `daily-review:${date}`,
-      memoId: anchorId,
-    });
-    if (inserted.meta.changes > 0) created += 1;
+    statements.push(
+      insertMemoNotification(db, {
+        receiverId,
+        senderId: receiverId,
+        type: "daily_review",
+        sourceEventId: `daily-review:${date}`,
+        memoId: anchorId,
+      }),
+    );
+  }
+  return countNotificationInserts(db, statements);
+}
+
+/** Flush notification inserts in batches; the count is the true insert total. */
+async function countNotificationInserts(
+  db: FlareMoDb,
+  statements: unknown[],
+): Promise<number> {
+  let created = 0;
+  for (let offset = 0; offset < statements.length; offset += 90) {
+    const results = await db.batch(
+      statements.slice(offset, offset + 90) as unknown as Parameters<
+        FlareMoDb["batch"]
+      >[0],
+    );
+    for (const result of results as unknown as Array<{
+      meta?: { changes?: number };
+    }>) {
+      if ((result?.meta?.changes ?? 0) > 0) created += 1;
+    }
   }
   return created;
 }
@@ -103,6 +137,8 @@ export async function createDailyReviewNotifications(
  * cannot exceed D1's bound-parameter limit.
  */
 const RANDOM_SAMPLE_WINDOW = 64;
+/** Upper bound on tag-overlap candidates ranked before the final `limit`. */
+const RELATED_TAG_CANDIDATE_LIMIT = 64;
 
 export async function getRandomMemo(
   db: FlareMoDb,
@@ -268,8 +304,13 @@ export async function listRelatedMemos(
 
   const sharedTagsByMemo = new Map<string, Set<string>>();
   if (sourceTags.length > 0) {
-    const rows = await db
-      .select({ memoId: memoTags.memoId, tag: memoTags.tag })
+    // Rank by shared-tag count in SQL and keep only a bounded window: reading
+    // every memo that carries any of these tags used to be an unbounded scan,
+    // and its ids then went straight into an `inArray` past D1's binding cap.
+    // The response only ever shows `limit` (max 10) rows, so the tail was
+    // pure waste.
+    const ranked = await db
+      .select({ memoId: memoTags.memoId })
       .from(memoTags)
       .innerJoin(memos, eq(memoTags.memoId, memos.id))
       .where(
@@ -277,13 +318,29 @@ export async function listRelatedMemos(
           eq(memoTags.userId, user.id),
           inArray(memoTags.tag, sourceTags),
           eq(memos.status, "normal"),
+          ne(memoTags.memoId, normalizedMemoId),
         ),
-      );
-    for (const row of rows) {
-      if (row.memoId === normalizedMemoId) continue;
-      const tags = sharedTagsByMemo.get(row.memoId) ?? new Set<string>();
-      tags.add(row.tag);
-      sharedTagsByMemo.set(row.memoId, tags);
+      )
+      .groupBy(memoTags.memoId)
+      .orderBy(desc(sql`count(*)`), desc(memoTags.memoId))
+      .limit(RELATED_TAG_CANDIDATE_LIMIT);
+    const rankedIds = ranked.map((row) => row.memoId);
+    for (const idChunk of chunkForD1(rankedIds, d1IdsPerStatement(2))) {
+      const tagRows = await db
+        .select({ memoId: memoTags.memoId, tag: memoTags.tag })
+        .from(memoTags)
+        .where(
+          and(
+            eq(memoTags.userId, user.id),
+            inArray(memoTags.memoId, idChunk),
+            inArray(memoTags.tag, sourceTags),
+          ),
+        );
+      for (const row of tagRows) {
+        const tags = sharedTagsByMemo.get(row.memoId) ?? new Set<string>();
+        tags.add(row.tag);
+        sharedTagsByMemo.set(row.memoId, tags);
+      }
     }
   }
 
@@ -311,18 +368,23 @@ export async function listRelatedMemos(
     ...new Set([...sharedTagsByMemo.keys(), ...relatedIds]),
   ];
   if (candidateIds.length === 0) return [];
-  const rows = await db
-    .select()
-    .from(memos)
-    .where(
-      and(
-        eq(memos.userId, user.id),
-        eq(memos.status, "normal"),
-        inArray(memos.id, candidateIds),
-      ),
+  const candidateRows: MemoRow[] = [];
+  for (const idChunk of chunkForD1(candidateIds, d1IdsPerStatement(2))) {
+    candidateRows.push(
+      ...(await db
+        .select()
+        .from(memos)
+        .where(
+          and(
+            eq(memos.userId, user.id),
+            eq(memos.status, "normal"),
+            inArray(memos.id, idChunk),
+          ),
+        )),
     );
+  }
 
-  return rows
+  return candidateRows
     .map((memo) => ({
       memo,
       sharedTags: [...(sharedTagsByMemo.get(memo.id) ?? [])].sort(),
@@ -380,16 +442,18 @@ export async function createOverdueTaskNotifications(
       ),
     )
     .limit(500);
-  let created = 0;
+  const statements: unknown[] = [];
   for (const task of overdue) {
-    const inserted = await insertMemoNotification(db, {
-      receiverId: task.userId,
-      senderId: task.userId,
-      type: "task_overdue",
-      sourceEventId: `task-overdue:${task.id}:${task.dueAt}`,
-      snippet: task.title,
-    });
-    if (inserted.meta.changes > 0) created += 1;
+    statements.push(
+      insertMemoNotification(db, {
+        receiverId: task.userId,
+        senderId: task.userId,
+        type: "task_overdue",
+        sourceEventId: `task-overdue:${task.id}:${task.dueAt}`,
+        snippet: task.title,
+      }),
+    );
   }
-  return created;
+  // Up to 500 overdue tasks used to cost 500 serial round trips per cron run.
+  return countNotificationInserts(db, statements);
 }

@@ -27,6 +27,7 @@ import {
   todayKey,
   type WeekStart,
 } from "@/lib/calendar-date";
+import { queryKeys } from "@/lib/query-keys";
 import {
   ACTIVITY_WINDOW_DAYS,
   buildActivityCountMap,
@@ -102,7 +103,7 @@ export const FlareMoTimeHorizon = memo(function FlareMoTimeHorizon({
   // partial picture. Historical years render uniform "no records" colour
   // instead, which is at least honest while the request resolves.
   const yearStatsQuery = useQuery({
-    queryKey: ["memo-stats-year", space, timeZone, currentYear],
+    queryKey: queryKeys.memoStatsYear.forYear(space, timeZone, currentYear),
     queryFn: ({ signal }) =>
       getMemoStats(
         timeZone,
@@ -132,7 +133,7 @@ export const FlareMoTimeHorizon = memo(function FlareMoTimeHorizon({
 
   // Memo query for Day view 15-minute fine-grained resolution (24 hours x 4 slots = 96 micro-slits)
   const dayMemosQuery = useQuery({
-    queryKey: ["memos-day-slots", selectedDay],
+    queryKey: queryKeys.memosDaySlots.forDay(selectedDay),
     queryFn: ({ signal }) =>
       listMemos({ q: dayFilterQuery(selectedDay), page_size: 100 }, signal),
     staleTime: 30_000,

@@ -40,7 +40,7 @@ function GalleryItem({ attachment }: { attachment: Attachment }) {
                 height={dimensions?.height}
                 loading="lazy"
                 onError={() => setFailed(true)}
-                src={attachment.preview_url}
+                src={attachment.thumbnail_url ?? attachment.preview_url}
                 style={
                   dimensions
                     ? {

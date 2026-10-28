@@ -9,6 +9,7 @@ import {
   users,
 } from "@flaremo/db";
 import { and, desc, eq, inArray, lt, notInArray, or } from "drizzle-orm";
+import { chunkForD1, d1IdsPerStatement } from "./d1-limits";
 import { NotFoundError, ValidationError } from "./errors";
 import { parseUserChildResourceName } from "./memos-user-shared";
 import { canReadMemo } from "./team-permissions";
@@ -111,23 +112,21 @@ export async function listUserNotifications(
 
   // Batch-prefetch every memo the page may reference (one query instead of
   // up to two point lookups per row), then build DTOs from the map.
-  const rows = await selectNotifications(db, and(...filters));
-  const memoIdSet = new Set<string>();
-  for (const row of rows) {
-    if (row.notification.memoId) memoIdSet.add(row.notification.memoId);
-    if (row.notification.relatedMemoId) {
-      memoIdSet.add(row.notification.relatedMemoId);
-    }
-  }
-  const memoById = new Map(
-    memoIdSet.size
-      ? (
-          await db
-            .select()
-            .from(memos)
-            .where(inArray(memos.id, [...memoIdSet]))
-        ).map((memo) => [memo.id, memo] as const)
-      : [],
+  //
+  // The window does not have to be the whole 1000-row maximum: the page is
+  // usually 50 rows, and joining senders for 1001 rows to render 50 was the
+  // dominant cost of opening the inbox. Four rows per requested row leaves
+  // headroom for DTO-level filtering without re-reading the deep history.
+  const windowSize = Math.min(
+    MAX_NOTIFICATION_PAGE_SIZE + 1,
+    Math.max(limit * 4, 60) + 1,
+  );
+  const rows = await selectNotifications(db, and(...filters), windowSize);
+  const memoById = new Map<string, typeof memos.$inferSelect>();
+  await prefetchNotificationMemos(
+    db,
+    memoById,
+    rows.map((row) => row.notification),
   );
 
   const page: UserNotificationDto[] = [];
@@ -148,7 +147,7 @@ export async function listUserNotifications(
   while (
     page.length < limit &&
     scanned >= rows.length &&
-    rows.length === MAX_NOTIFICATION_PAGE_SIZE + 1 &&
+    rows.length === windowSize &&
     lastScanned
   ) {
     cursorState = {
@@ -170,23 +169,16 @@ export async function listUserNotifications(
         ),
       ),
     ];
-    const more = await selectNotifications(db, and(...windowFilters));
-    const memoIdWindow = new Set<string>();
-    for (const row of more) {
-      if (row.notification.memoId) memoIdWindow.add(row.notification.memoId);
-      if (row.notification.relatedMemoId) {
-        memoIdWindow.add(row.notification.relatedMemoId);
-      }
-    }
-    const missing = [...memoIdWindow].filter((id) => !memoById.has(id));
-    if (missing.length > 0) {
-      for (const memo of await db
-        .select()
-        .from(memos)
-        .where(inArray(memos.id, missing))) {
-        memoById.set(memo.id, memo);
-      }
-    }
+    const more = await selectNotifications(
+      db,
+      and(...windowFilters),
+      windowSize,
+    );
+    await prefetchNotificationMemos(
+      db,
+      memoById,
+      more.map((row) => row.notification),
+    );
     for (const row of more) {
       scanned += 1;
       lastScanned = row;
@@ -357,6 +349,7 @@ export async function findMentionedUsers(
 async function selectNotifications(
   db: FlareMoDb,
   where: ReturnType<typeof and>,
+  windowSize: number = MAX_NOTIFICATION_PAGE_SIZE + 1,
 ): Promise<NotificationWithSender[]> {
   return db
     .select({
@@ -371,7 +364,38 @@ async function selectNotifications(
     .leftJoin(authUsers, eq(authUsers.id, authUserLinks.authUserId))
     .where(where)
     .orderBy(desc(memosNotifications.createdAt), desc(memosNotifications.id))
-    .limit(MAX_NOTIFICATION_PAGE_SIZE + 1);
+    .limit(windowSize);
+}
+
+/**
+ * Fill `memoById` with every memo a notification window points at. The window
+ * can carry two ids per row (up to 2000 bindings if the inbox window is at its
+ * maximum), so the ids are chunked before they reach D1.
+ */
+async function prefetchNotificationMemos(
+  db: FlareMoDb,
+  memoById: Map<string, typeof memos.$inferSelect>,
+  notifications: readonly MemosNotificationRow[],
+) {
+  const missing = new Set<string>();
+  for (const notification of notifications) {
+    if (notification.memoId && !memoById.has(notification.memoId)) {
+      missing.add(notification.memoId);
+    }
+    if (
+      notification.relatedMemoId &&
+      !memoById.has(notification.relatedMemoId)
+    ) {
+      missing.add(notification.relatedMemoId);
+    }
+  }
+  for (const idChunk of chunkForD1([...missing], d1IdsPerStatement())) {
+    const rows = await db
+      .select()
+      .from(memos)
+      .where(inArray(memos.id, idChunk));
+    for (const memo of rows) memoById.set(memo.id, memo);
+  }
 }
 
 async function getNotification(

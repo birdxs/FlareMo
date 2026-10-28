@@ -9,6 +9,7 @@ import {
   Maximize2Icon,
   MicIcon,
 } from "lucide-react";
+import { loadComposerFocusCanvas } from "@/components/composer/composer-focus-canvas-lazy";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/i18n";
@@ -176,9 +177,7 @@ export function ComposerToolbar({
           variant="ghost"
           onClick={onExpand}
           onMouseEnter={() => {
-            void import(
-              "@/components/composer/composer-focus-canvas-lazy"
-            ).then((m) => m.loadComposerFocusCanvas());
+            void loadComposerFocusCanvas();
           }}
           title={t("composer.fullscreen.open")}
         >

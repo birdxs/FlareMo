@@ -6,9 +6,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && tsc --noEmit -p tsconfig.team-projects.json && vite build",
+    "build": "tsc --noEmit -p tsconfig.app.json --pretty false && tsc --noEmit -p tsconfig.node.json --pretty false && tsc --noEmit -p tsconfig.team-projects.json --pretty false && vite build",
     "check": "tsc --noEmit -p tsconfig.app.json --pretty false && tsc --noEmit -p tsconfig.node.json --pretty false && tsc --noEmit -p tsconfig.team-projects.json --pretty false",
-    "typecheck": "tsc -b --pretty false && tsc --noEmit -p tsconfig.team-projects.json --pretty false",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json --pretty false && tsc --noEmit -p tsconfig.node.json --pretty false && tsc --noEmit -p tsconfig.team-projects.json --pretty false",
     "test": "vitest run --config ../../vitest.config.ts --passWithNoTests",
     "preview": "vite preview"
   },
@@ -26,6 +26,7 @@
     "@tailwindcss/vite": "^4",
     "@tanstack/react-query": "^5.90.12",
     "@tanstack/react-router": "^1.140.0",
+    "@tanstack/react-virtual": "^3.14.22",
     "@tiptap/core": "^3.31.3",
     "@tiptap/extension-code-block-lowlight": "^3.31.3",
     "@tiptap/extension-image": "^3.31.3",

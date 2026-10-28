@@ -1,4 +1,7 @@
-import { CAPTURE_MAX_DURATION_MS, CAPTURE_MAX_TEXT } from "@flaremo/contracts";
+import {
+  CAPTURE_MAX_DURATION_MS,
+  CAPTURE_MAX_TEXT,
+} from "@flaremo/contracts/constants";
 import { Link } from "@tanstack/react-router";
 import { Mic, Square } from "lucide-react";
 import {

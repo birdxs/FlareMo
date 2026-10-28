@@ -43,17 +43,27 @@ export function MemoCardBody({
   taskInteraction,
 }: MemoCardBodyProps) {
   const { t } = useI18n();
-  const tags = memo.payload.tags ?? extractTags(memo.content);
+  // Both of these walk the whole body: tag extraction runs a regex over the
+  // full text and filterUnreferencedAttachments scans every attachment
+  // reference. Without memoization they re-ran on every parent re-render —
+  // including each scroll-driven state flip in the timeline.
+  const tags = useMemo(
+    () => memo.payload.tags ?? extractTags(memo.content),
+    [memo.payload.tags, memo.content],
+  );
   // Body-referenced images render inline; the gallery keeps only the rest.
-  const galleryAttachments = filterUnreferencedAttachments(
-    attachments,
-    memo.content,
+  const galleryAttachments = useMemo(
+    () => filterUnreferencedAttachments(attachments, memo.content),
+    [attachments, memo.content],
   );
   // Long bodies (transcripts, articles) collapse so one memo cannot dominate
   // the timeline.
-  const isCollapsible =
-    memo.content.length > COLLAPSE_THRESHOLD ||
-    memo.content.split("\n").length > 12;
+  const isCollapsible = useMemo(
+    () =>
+      memo.content.length > COLLAPSE_THRESHOLD ||
+      memo.content.split("\n").length > 12,
+    [memo.content],
+  );
   const collapsed = isCollapsible && !expanded;
   // Intrinsic boxes for body images: uploaded dimensions ride the
   // attachments list, so a photo the author placed inline never shoves the

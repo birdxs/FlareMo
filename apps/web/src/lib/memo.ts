@@ -87,6 +87,41 @@ function maskInlineCode(line: string) {
 }
 
 /**
+ * Formatter caches. Constructing `Intl` objects is one of the more expensive
+ * things a render can do — a timeline card formats its timestamp twice, and
+ * a hundred cards re-rendering meant hundreds of constructions per frame.
+ * Keyed by locale plus the variant flags, so switching language still works.
+ */
+const dateTimeFormatters = new Map<string, Intl.DateTimeFormat>();
+const relativeTimeFormatters = new Map<string, Intl.RelativeTimeFormat>();
+
+function getDateTimeFormatter(locale: string | undefined, withYear: boolean) {
+  const key = `${locale ?? ""}|${withYear ? "y" : "n"}`;
+  let formatter = dateTimeFormatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, {
+      ...(withYear ? { year: "numeric" } : {}),
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    dateTimeFormatters.set(key, formatter);
+  }
+  return formatter;
+}
+
+function getRelativeTimeFormatter(locale: string | undefined) {
+  const key = locale ?? "";
+  let formatter = relativeTimeFormatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+    relativeTimeFormatters.set(key, formatter);
+  }
+  return formatter;
+}
+
+/**
  * Absolute timestamp for a memo. The year is only spelled out when it differs
  * from the current one: imported backfills routinely span many years (issue
  * #143), and two memos from the same month/day in different years used to be
@@ -97,13 +132,7 @@ export function formatMemoTime(value: string, locale?: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   const sameYear = date.getFullYear() === new Date().getFullYear();
-  return new Intl.DateTimeFormat(locale, {
-    ...(sameYear ? {} : { year: "numeric" }),
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
+  return getDateTimeFormatter(locale, !sameYear).format(date);
 }
 
 /**
@@ -116,7 +145,7 @@ export function formatMemoRelativeTime(value: string, locale?: string) {
   const diffSeconds = Math.round((date.getTime() - Date.now()) / 1000);
   const absSeconds = Math.abs(diffSeconds);
   if (absSeconds >= 7 * 86_400) return formatMemoTime(value, locale);
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  const rtf = getRelativeTimeFormatter(locale);
   if (absSeconds < 45) return rtf.format(0, "second");
   if (absSeconds < 3_600)
     return rtf.format(Math.round(diffSeconds / 60), "minute");

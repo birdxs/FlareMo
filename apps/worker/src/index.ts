@@ -1,7 +1,5 @@
-import {
-  createCurrentOpenApiDocument,
-  createOpenApiDocument,
-} from "@flaremo/contracts";
+import { createOpenApiDocument } from "@flaremo/contracts/openapi";
+import { createCurrentOpenApiDocument } from "@flaremo/contracts/openapi-current";
 import { createDb } from "@flaremo/db";
 import {
   dispatchEmbeddingOutbox,
@@ -90,6 +88,23 @@ function resolveFlareMoOptions(
       options.resolveUserPlanLimits ??
       ((env: FlareMoEnv) => parseUserPlanLimits(env.FLAREMO_USER_LIMITS_JSON)),
   };
+}
+
+// The documents are pure data built from literals; caching them keeps
+// /openapi.json from re-allocating a few thousand objects per request.
+let legacyOpenApiDocument: ReturnType<typeof createOpenApiDocument> | undefined;
+let currentOpenApiDocument:
+  | ReturnType<typeof createCurrentOpenApiDocument>
+  | undefined;
+
+function getLegacyOpenApiDocument() {
+  legacyOpenApiDocument ??= createOpenApiDocument();
+  return legacyOpenApiDocument;
+}
+
+function getCurrentOpenApiDocument() {
+  currentOpenApiDocument ??= createCurrentOpenApiDocument();
+  return currentOpenApiDocument;
 }
 
 export function createFlareMoApp(
@@ -328,8 +343,8 @@ export function createFlareMoApp(
   app.get("/openapi.json", (c) =>
     c.json(
       isLegacyWireRequest(c)
-        ? createOpenApiDocument()
-        : createCurrentOpenApiDocument(),
+        ? getLegacyOpenApiDocument()
+        : getCurrentOpenApiDocument(),
     ),
   );
   app.get("/api/v1/openapi.json", async (c) => {
@@ -337,8 +352,8 @@ export function createFlareMoApp(
       await getRequestContext(c);
       return c.json(
         isLegacyWireRequest(c)
-          ? createOpenApiDocument()
-          : createCurrentOpenApiDocument(),
+          ? getLegacyOpenApiDocument()
+          : getCurrentOpenApiDocument(),
       );
     } catch (error) {
       return jsonError(c, error);

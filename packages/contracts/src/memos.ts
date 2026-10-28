@@ -173,6 +173,8 @@ export const attachmentDtoSchema = z.object({
   update_time: z.string(),
   download_url: z.string(),
   preview_url: z.string(),
+  /** Card-sized WebP preview; absent when none was generated at upload. */
+  thumbnail_url: z.string().optional(),
 });
 
 export const memoDtoSchema = z.object({

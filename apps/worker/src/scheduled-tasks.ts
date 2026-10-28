@@ -1,3 +1,4 @@
+import { thumbnailKeyFor } from "@flaremo/contracts/constants";
 import { createDb, memosNotifications, tasks } from "@flaremo/db";
 import {
   beginFlaremoMemberRemoval,
@@ -247,7 +248,13 @@ export async function runScheduledMaintenance(
   for (let batch = 0; batch < MAX_ATTACHMENT_CLEANUP_BATCHES; batch++) {
     const candidates = await listAttachmentCleanupCandidates(db, orphanCutoff);
     if (candidates.length === 0) break;
-    const objectKeys = candidates.map((attachment) => attachment.r2Key);
+    // Originals plus their derived previews; a preview's key is the original
+    // with a fixed suffix, so it is not discoverable by a later sweep.
+    const objectKeys = candidates.flatMap((attachment) =>
+      attachment.payload?.thumbnail === true
+        ? [attachment.r2Key, thumbnailKeyFor(attachment.r2Key)]
+        : [attachment.r2Key],
+    );
     await env.ATTACHMENTS.delete(objectKeys);
     await finalizeAttachmentCleanupForIds(
       db,
@@ -288,8 +295,10 @@ export async function runScheduledMaintenance(
         owner,
         articleId,
       );
-      const objectKeys = articleAttachments.map(
-        (attachment) => attachment.r2Key,
+      const objectKeys = articleAttachments.flatMap((attachment) =>
+        attachment.payload?.thumbnail === true
+          ? [attachment.r2Key, thumbnailKeyFor(attachment.r2Key)]
+          : [attachment.r2Key],
       );
       if (objectKeys.length > 0) {
         await env.ATTACHMENTS.delete(objectKeys);

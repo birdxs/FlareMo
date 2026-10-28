@@ -115,7 +115,10 @@ export function MemoryPage() {
         />
       )}
       onScroll={(event) => {
-        setIsScrolled(event.currentTarget.scrollTop > 4);
+        // Guard the same-value case: a bare setState here re-rendered the
+        // whole memory page on every scroll event, not just at the threshold.
+        const next = event.currentTarget.scrollTop > 4;
+        setIsScrolled((prev) => (prev === next ? prev : next));
       }}
     >
       <div className="flex flex-col gap-3.5 pt-2">
