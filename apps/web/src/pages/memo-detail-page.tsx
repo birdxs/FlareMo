@@ -226,6 +226,17 @@ function MemoDetail({
   sharePending: boolean;
 }) {
   const { t } = useI18n();
+  // The links tab is about wiki links; a comment thread shows under the
+  // content instead. The page's relation edits still read the full context,
+  // so replacing links never drops a comment's parent relation.
+  const isLink = ({ relation }: { relation: { type: string } }) =>
+    relation.type !== "comment";
+  const linkContext = {
+    ...context,
+    relations: context.relations.filter(isLink),
+    backlinks: context.backlinks.filter(isLink),
+  };
+  const linkCount = linkContext.relations.length + linkContext.backlinks.length;
   return (
     // overflow-clip keeps the rounded clipping but, unlike the Card base's
     // overflow-hidden, does not turn the card into a scroll container — the
@@ -260,9 +271,7 @@ function MemoDetail({
             <TabsTrigger value="content">{t("detail.content")}</TabsTrigger>
             <TabsTrigger value="relations">
               {t("detail.relations")}
-              {context.relations.length + context.backlinks.length > 0
-                ? ` (${context.relations.length + context.backlinks.length})`
-                : ""}
+              {linkCount > 0 ? ` (${linkCount})` : ""}
             </TabsTrigger>
             {(canManage || canGovern) && (
               <TabsTrigger value="history">{t("detail.history")}</TabsTrigger>
@@ -280,7 +289,7 @@ function MemoDetail({
           <RelationsTab
             canManage={canManage}
             candidates={candidates}
-            context={context}
+            context={linkContext}
             isSearching={isSearching}
             relatedMemo={relatedMemo}
             relationPending={relationPending}

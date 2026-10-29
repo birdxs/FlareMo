@@ -519,3 +519,41 @@ function normalizeCommentOrder(value: string | undefined) {
   }
   return `${field} ${direction}`;
 }
+
+/**
+ * Live comment counts for a page of parent memos, keyed by parent id
+ * (`memos/<id>`). Only comments the viewer can read are counted, with the
+ * same boundary as {@link listMemoComments}, so the number on a card always
+ * matches the list the detail page shows. Parents without comments are
+ * absent from the map.
+ */
+export async function countMemoComments(
+  db: FlareMoDb,
+  user: UserRow,
+  parentIds: string[],
+): Promise<Map<string, number>> {
+  const ids = [
+    ...new Set(parentIds.map((id) => parseResourceName(id, "memos"))),
+  ];
+  const counts = new Map<string, number>();
+  for (const idChunk of chunkForD1(ids, d1IdsPerStatement(4))) {
+    const rows = await db
+      .select({
+        parentId: memoRelations.relatedMemoId,
+        total: count(memos.id),
+      })
+      .from(memoRelations)
+      .innerJoin(memos, eq(memos.id, memoRelations.memoId))
+      .where(
+        and(
+          inArray(memoRelations.relatedMemoId, idChunk),
+          eq(memoRelations.type, "comment"),
+          inArray(memos.status, ["normal", "archived"]),
+          memoReadScope(user),
+        ),
+      )
+      .groupBy(memoRelations.relatedMemoId);
+    for (const row of rows) counts.set(row.parentId, row.total);
+  }
+  return counts;
+}

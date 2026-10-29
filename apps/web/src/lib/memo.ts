@@ -176,9 +176,15 @@ export function memoTitle(content: string, maxLength = 80) {
     );
     if (!line) continue;
     if (isTagLine(line)) continue;
-    return line.length > maxLength
-      ? `${line.slice(0, maxLength).trimEnd()}…`
-      : line;
+    // Inline tags are filing, not prose: a title reads without them.
+    const prose = line
+      .replace(new RegExp(TAG_PATTERN.source, "gu"), "$1")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+    if (!prose) continue;
+    return prose.length > maxLength
+      ? `${prose.slice(0, maxLength).trimEnd()}…`
+      : prose;
   }
   return "";
 }

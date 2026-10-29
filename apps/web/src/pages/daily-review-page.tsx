@@ -19,7 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { WorkspaceLayout } from "@/components/workspace/workspace-layout";
 import { WorkspacePageHeader } from "@/components/workspace/workspace-page-header";
 import { type TranslationKey, type TranslationParams, useI18n } from "@/i18n";
-import { todayKey } from "@/lib/calendar-date";
+import { isoDay, todayKey } from "@/lib/calendar-date";
 
 export function DailyReviewPage() {
   const { locale, t } = useI18n();
@@ -165,18 +165,29 @@ function buildReviewGroups(
   todayStr: string,
   t: (key: TranslationKey, params?: TranslationParams) => string,
 ): ReviewGroup[] {
-  const currentYear = new Date().getFullYear();
   const groups: ReviewGroup[] = [];
+  // Whole local calendar days between two `YYYY-MM-DD` keys; noon anchors
+  // keep a daylight-saving shift from moving the result.
+  const daysBetween = (from: string, to: string) =>
+    Math.round(
+      (new Date(`${to}T12:00:00`).getTime() -
+        new Date(`${from}T12:00:00`).getTime()) /
+        86_400_000,
+    );
 
   for (const memo of memos) {
     const timeStr = memo.display_time ?? memo.create_time;
-    const memoDate = new Date(timeStr);
-    const dateOnly = timeStr.slice(0, 10);
-    // Exclude notes written today so daily review focuses strictly on the past
-    if (dateOnly === todayStr) continue;
+    // The memo's day as the author saw it. The stored time is UTC, so
+    // slicing the string put a note written at 07:00 in UTC+8 on the
+    // previous day, and today's notes leaked into the review.
+    const memoDay = isoDay(new Date(timeStr));
+    // The review looks back; anything written today is not a memory yet.
+    if (memoDay >= todayStr) continue;
 
-    const year = memoDate.getFullYear();
-    const yearsAgo = currentYear - year;
+    const diffDays = daysBetween(memoDay, todayStr);
+    // A year counts once the anniversary has passed: a December note is
+    // not "a year ago" in January.
+    const yearsAgo = Math.floor(diffDays / 365.25);
 
     let key: string;
     let title: string;
@@ -187,25 +198,19 @@ function buildReviewGroups(
         yearsAgo === 1
           ? t("review.oneYearAgoToday")
           : t("review.yearsAgoToday", { count: yearsAgo });
+    } else if (diffDays <= 7) {
+      // First-year progressive interval ladder (spaced repetition).
+      key = "ladder-7d";
+      title = t("review.ladder7d");
+    } else if (diffDays <= 30) {
+      key = "ladder-30d";
+      title = t("review.ladder30d");
+    } else if (diffDays <= 90) {
+      key = "ladder-90d";
+      title = t("review.ladder90d");
     } else {
-      // First-year progressive interval ladder (Ebbinghaus spaced repetition)
-      const diffDays = Math.max(
-        1,
-        Math.floor((Date.now() - memoDate.getTime()) / 86_400_000),
-      );
-      if (diffDays <= 7) {
-        key = "ladder-7d";
-        title = t("review.ladder7d");
-      } else if (diffDays <= 30) {
-        key = "ladder-30d";
-        title = t("review.ladder30d");
-      } else if (diffDays <= 90) {
-        key = "ladder-90d";
-        title = t("review.ladder90d");
-      } else {
-        key = "ladder-180d";
-        title = t("review.ladder180d");
-      }
+      key = "ladder-180d";
+      title = t("review.ladder180d");
     }
 
     const existing = groups.find((g) => g.key === key);

@@ -998,6 +998,16 @@ svg.lucide[stroke-width="2"] {
     @apply mr-1.5 inline-flex items-center rounded-md bg-brand-50 px-1.5 py-0.5 font-mono text-[0.8em] text-brand-700 tabular-nums transition-colors hover:bg-brand-100 dark:bg-brand-400/12 dark:text-brand-200 dark:hover:bg-brand-400/20;
   }
 
+  /* An in-text #tag: a quiet chip at the point it was written. It never
+     breaks between the hash and the name. */
+  .memo-markdown .memo-tag {
+    @apply inline-block rounded-md bg-muted px-1 align-baseline text-[0.92em] leading-[1.6] whitespace-nowrap text-foreground/75 no-underline decoration-transparent dark:bg-muted/80;
+  }
+
+  .memo-markdown button.memo-tag {
+    @apply cursor-pointer motion-safe:transition-colors hover:bg-[color-mix(in_oklch,var(--muted),var(--foreground)_8%)] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40;
+  }
+
   .memo-timestamp-static {
     @apply mr-1.5 inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 font-mono text-[0.8em] text-muted-foreground tabular-nums;
   }

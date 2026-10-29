@@ -6,7 +6,7 @@ import {
   parseMemoSearchQuery,
 } from "@flaremo/contracts";
 import type { FlareMoDb, MemoRow } from "@flaremo/db";
-import { attachments, memos, memoTags } from "@flaremo/db";
+import { attachments, memoRelations, memos, memoTags } from "@flaremo/db";
 import { and, asc, desc, eq, gt, gte, inArray, lt, or, sql } from "drizzle-orm";
 import { chunkForD1, d1IdsPerStatement } from "./d1-limits";
 import { NotFoundError, ValidationError } from "./errors";
@@ -83,6 +83,12 @@ export async function listMemosForViewer(
   const spaceFilter = spaceScope(user, query.space);
   if (spaceFilter) filters.push(spaceFilter);
   if (celFilter?.sqlPredicate) filters.push(celFilter.sqlPredicate);
+  // Comments live under their parent memo, never as timeline entries, the
+  // same as upstream Memos (ListMemos skips rows with a COMMENT parent).
+  // They are read through the comment endpoints instead.
+  filters.push(
+    sql`NOT EXISTS (SELECT 1 FROM ${memoRelations} WHERE ${memoRelations.memoId} = ${memos.id} AND ${memoRelations.type} = 'comment')`,
+  );
 
   // The established `state` query parameter wins over a search scope so that
   // Memos-compatible clients retain their existing filtering semantics.

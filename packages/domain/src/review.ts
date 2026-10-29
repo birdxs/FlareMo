@@ -353,9 +353,13 @@ export async function listRelatedMemos(
     })
     .from(memoRelations)
     .where(
-      or(
-        eq(memoRelations.memoId, normalizedMemoId),
-        eq(memoRelations.relatedMemoId, normalizedMemoId),
+      and(
+        // A comment thread is shown under the memo, not as a related note.
+        eq(memoRelations.type, "reference"),
+        or(
+          eq(memoRelations.memoId, normalizedMemoId),
+          eq(memoRelations.relatedMemoId, normalizedMemoId),
+        ),
       ),
     );
   const relatedIds = new Set(
@@ -381,6 +385,7 @@ export async function listRelatedMemos(
             eq(memos.userId, user.id),
             eq(memos.status, "normal"),
             inArray(memos.id, idChunk),
+            sql`NOT EXISTS (SELECT 1 FROM ${memoRelations} WHERE ${memoRelations.memoId} = ${memos.id} AND ${memoRelations.type} = 'comment')`,
           ),
         )),
     );

@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { PinIcon } from "lucide-react";
 import { useState } from "react";
 import type { Memo, MemoVisibility, Share } from "@/api";
 import { MemoVisibilityDialog } from "@/components/memo-visibility-dialog";
@@ -57,7 +58,7 @@ export function MemoCardHeader({
   onRequestShareImage,
   onRequestVisibility,
 }: MemoCardHeaderProps) {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const [isVisibilityOpen, setIsVisibilityOpen] = useState(false);
   return (
     <>
@@ -87,6 +88,14 @@ export function MemoCardHeader({
           )}
         </Link>
         <div className="flex shrink-0 items-center gap-1">
+          {memo.pinned && memo.state === "normal" && (
+            <span
+              className="inline-flex size-6 items-center justify-center text-muted-foreground"
+              title={t("memo.pinned")}
+            >
+              <PinIcon aria-label={t("memo.pinned")} className="size-3.5" />
+            </span>
+          )}
           {memo.source === "voice" && <VoiceBadge memo={memo} />}
           {memo.visibility !== "private" && (
             <VisibilityBadge
