@@ -32,6 +32,17 @@ import {
 import { ArticleEditor, extractImageFiles } from "@/components/article-editor";
 import { ArticlePublishDialog } from "@/components/article-publish-dialog";
 import { ArticleShikiBody } from "@/components/article-shiki-body";
+import { QueryErrorState } from "@/components/query-error-state";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -63,6 +74,7 @@ export function ArticleEditorPage({ articleId }: { articleId: string }) {
   const [content, setContent] = useState("");
   const [previewMode, setPreviewMode] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [savedArticle, setSavedArticle] = useState<Article | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [isUploadingImages, setIsUploadingImages] = useState(false);
@@ -194,10 +206,15 @@ export function ArticleEditorPage({ articleId }: { articleId: string }) {
     }).finally(() => setIsUploadingImages(false));
   };
 
+  // Loading and error share the loaded editor's container so the page does
+  // not jump sideways once the article arrives.
+  const containerClass =
+    "mx-auto flex min-h-svh w-full max-w-5xl flex-col gap-3 px-4 py-6";
+
   if (articleQuery.isLoading) {
     return (
-      <div className="flex flex-col gap-4 p-6">
-        <Skeleton className="h-10 w-2/3" />
+      <div className={containerClass}>
+        <Skeleton className="h-9 w-2/3" />
         <Skeleton className="h-[50vh] w-full" />
       </div>
     );
@@ -205,8 +222,22 @@ export function ArticleEditorPage({ articleId }: { articleId: string }) {
 
   if (articleQuery.isError || !article) {
     return (
-      <div className="p-6 text-sm text-muted-foreground">
-        {t("article.loadFailed")}
+      <div className={containerClass}>
+        <header className="flex items-center gap-2">
+          <Button
+            onClick={() => navigate({ to: "/articles" })}
+            size="sm"
+            type="button"
+            variant="ghost"
+          >
+            <ArrowLeftIcon className="size-4" data-icon="inline-start" />
+            {t("common.back")}
+          </Button>
+        </header>
+        <QueryErrorState
+          isRetrying={articleQuery.isFetching}
+          onRetry={() => void articleQuery.refetch()}
+        />
       </div>
     );
   }
@@ -215,7 +246,7 @@ export function ArticleEditorPage({ articleId }: { articleId: string }) {
   const shownArticle = savedArticle ?? article;
 
   return (
-    <div className="mx-auto flex min-h-svh w-full max-w-5xl flex-col gap-3 px-4 py-6">
+    <div className={containerClass}>
       <header className="flex flex-wrap items-center gap-2">
         <Button
           aria-label={t("common.back")}
@@ -294,15 +325,15 @@ export function ArticleEditorPage({ articleId }: { articleId: string }) {
             : t("article.publishAction")}
         </Button>
         <Button
-          onClick={() => {
-            if (window.confirm(t("article.deleteConfirm"))) {
-              deleteMutation.mutate();
-            }
-          }}
+          disabled={deleteMutation.isPending}
+          onClick={() => setConfirmingDelete(true)}
           size="sm"
           type="button"
           variant="ghost"
         >
+          {deleteMutation.isPending && (
+            <Loader2Icon className="size-4 motion-safe:animate-spin" />
+          )}
           {t("common.delete")}
         </Button>
       </header>
@@ -345,6 +376,26 @@ export function ArticleEditorPage({ articleId }: { articleId: string }) {
         }}
         open={publishOpen}
       />
+      <AlertDialog open={confirmingDelete} onOpenChange={setConfirmingDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("article.deleteConfirm")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("article.deleteDescription")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteMutation.mutate()}
+              variant="destructive"
+            >
+              {t("common.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

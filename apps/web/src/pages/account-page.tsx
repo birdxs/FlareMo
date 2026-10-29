@@ -185,15 +185,16 @@ export function AccountSettingsDialog({
         >
           {/* Mobile Detail Navigation Bar */}
           <div className="flex shrink-0 items-center justify-between border-b bg-background/90 px-2 py-2 backdrop-blur-md">
-            <button
-              type="button"
+            <Button
+              className="-ms-1 gap-0.5 px-1.5 font-medium text-primary hover:bg-accent/50 hover:text-primary"
               onClick={() => setMobileView("master")}
-              className="flex items-center gap-1 text-sm font-medium text-primary hover:opacity-80 transition-opacity py-1 px-2 -ml-1"
+              size="sm"
+              variant="ghost"
             >
-              <ChevronLeftIcon className="size-5" />
+              <ChevronLeftIcon className="size-5 rtl:rotate-180" />
               <span>{t("settings.title")}</span>
-            </button>
-            <h2 className="font-heading text-sm font-semibold tracking-tight truncate px-2 text-foreground">
+            </Button>
+            <h2 className="truncate px-2 font-heading text-sm font-semibold tracking-tight text-foreground">
               {activeLabel}
             </h2>
             <Button
@@ -246,10 +247,8 @@ export function AccountSettingsDialog({
             type="button"
             onClick={() => setSection("account")}
             className={cn(
-              "flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-all cursor-pointer mb-2 border",
-              section === "account"
-                ? "bg-accent/80 border-border/60 shadow-2xs text-foreground"
-                : "border-transparent hover:bg-accent/40 text-foreground",
+              "mb-2 flex w-full cursor-pointer items-center gap-3 rounded-xl p-2.5 text-start text-foreground transition-colors",
+              section === "account" ? "bg-accent" : "hover:bg-muted",
             )}
           >
             <Avatar

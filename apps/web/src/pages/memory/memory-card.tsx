@@ -116,10 +116,7 @@ export const MemoryCard = memo(function MemoryCard({
               <span>{t("memory.observedBadge")}</span>
             </Badge>
           ) : memory.needs_review || memory.verification === "inferred" ? (
-            <Badge
-              variant="outline"
-              className="gap-1 border-amber-500/40 text-amber-600 dark:text-amber-400 text-xs font-normal"
-            >
+            <Badge variant="warning" className="gap-1 font-normal">
               <SparklesIcon className="size-3" />
               <span>{t("memory.inferredBadge")}</span>
             </Badge>
@@ -256,7 +253,7 @@ export const MemoryCard = memo(function MemoryCard({
             {t("memory.rejectProposal")}
           </Button>
           {memory.review_reason && (
-            <span className="text-xs text-amber-500 font-medium ml-auto truncate max-w-[200px]">
+            <span className="ms-auto max-w-[200px] truncate text-xs font-medium text-warning-emphasis">
               {memory.review_reason}
             </span>
           )}

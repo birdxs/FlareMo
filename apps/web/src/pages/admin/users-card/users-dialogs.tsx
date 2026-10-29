@@ -2,6 +2,7 @@ import { Loader2Icon } from "lucide-react";
 import type { AdminUser } from "@/api";
 import { InfoTip } from "@/components/info-tip";
 import { SecretRevealDialog } from "@/components/secret-reveal-dialog";
+import { Alert } from "@/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -143,11 +144,7 @@ function CreateUserDialog({
             <InfoTip text={t("admin.activationDescription")} />
             <span className="sr-only">{t("admin.activationDescription")}</span>
           </p>
-          {createError && (
-            <p className="rounded-lg border border-destructive/30 bg-destructive/8 px-3 py-2 text-sm text-destructive">
-              {createError}
-            </p>
-          )}
+          {createError && <Alert variant="destructive">{createError}</Alert>}
           <DialogFooter>
             <Button
               disabled={createUserMutation.isPending}

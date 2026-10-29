@@ -7,6 +7,7 @@ import {
   PlusIcon,
   Trash2Icon,
 } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import {
   createArticle,
@@ -14,6 +15,17 @@ import {
   listArticles,
   restoreArticle,
 } from "@/api";
+import { QueryErrorState } from "@/components/query-error-state";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +41,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { WorkspaceLayout } from "@/components/workspace/workspace-layout";
 import { WorkspacePageHeader } from "@/components/workspace/workspace-page-header";
 import { useI18n } from "@/i18n";
+import { formatDate } from "@/lib/date-format";
 import { stripResourceName } from "@/lib/utils";
 
 /**
@@ -51,6 +64,7 @@ export function ArticlesPage() {
   const { locale, t } = useI18n();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const articlesQuery = useQuery({
     queryKey: ["articles"],
     // include_deleted feeds the recycle-bin affordances below (restore action
@@ -90,6 +104,7 @@ export function ArticlesPage() {
       toast.success(t("article.restored"));
       void queryClient.invalidateQueries({ queryKey: ["articles"] });
     },
+    onError: () => toast.error(t("article.restoreFailed")),
   });
 
   const articles = articlesQuery.data?.articles ?? [];
@@ -139,6 +154,12 @@ export function ArticlesPage() {
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-20 w-full" />
           </div>
+        )}
+        {articlesQuery.isError && (
+          <QueryErrorState
+            isRetrying={articlesQuery.isFetching}
+            onRetry={() => void articlesQuery.refetch()}
+          />
         )}
         {articlesQuery.data && articles.length === 0 && (
           <Empty className="min-h-72 border border-border/60 bg-card/50 motion-safe:animate-rise">
@@ -203,7 +224,7 @@ export function ArticlesPage() {
                   <span className="text-xs text-muted-foreground">
                     {article.deleted_at
                       ? t("article.inRecycleBin")
-                      : article.updated_at.slice(0, 10)}
+                      : formatDate(article.updated_at, locale)}
                   </span>
                   <div className="flex items-center gap-1">
                     {article.status === "published" && !article.deleted_at && (
@@ -221,6 +242,10 @@ export function ArticlesPage() {
                     )}
                     {article.deleted_at ? (
                       <Button
+                        disabled={
+                          restoreMutation.isPending &&
+                          restoreMutation.variables === article.id
+                        }
                         onClick={() => restoreMutation.mutate(article.id)}
                         size="sm"
                         type="button"
@@ -231,11 +256,11 @@ export function ArticlesPage() {
                     ) : (
                       <Button
                         aria-label={t("common.delete")}
-                        onClick={() => {
-                          if (window.confirm(t("article.deleteConfirm"))) {
-                            deleteMutation.mutate(article.id);
-                          }
-                        }}
+                        disabled={
+                          deleteMutation.isPending &&
+                          deleteMutation.variables === article.id
+                        }
+                        onClick={() => setConfirmDeleteId(article.id)}
                         size="icon"
                         type="button"
                         variant="ghost"
@@ -250,6 +275,33 @@ export function ArticlesPage() {
           </div>
         )}
       </div>
+      <AlertDialog
+        open={confirmDeleteId !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDeleteId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("article.deleteConfirm")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("article.deleteDescription")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmDeleteId) deleteMutation.mutate(confirmDeleteId);
+                setConfirmDeleteId(null);
+              }}
+              variant="destructive"
+            >
+              {t("common.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </WorkspaceLayout>
   );
 }

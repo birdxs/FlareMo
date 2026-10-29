@@ -8,6 +8,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getRandomWalkMemo, getWalkNextMemo } from "@/api";
 import { MemoSnapshotCard } from "@/components/memo-snapshot-card";
+import { QueryErrorState } from "@/components/query-error-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -132,22 +133,11 @@ export function RandomWalkPage() {
               <Skeleton className="h-64 w-full" />
             )}
             {loadError && (
-              <Empty className="min-h-72 border">
-                <EmptyHeader>
-                  <EmptyTitle>{t("list.errorTitle")}</EmptyTitle>
-                  <EmptyDescription>
-                    {t("list.errorDescription")}
-                  </EmptyDescription>
-                </EmptyHeader>
-                <Button
-                  className="mt-2"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => void (steps.length > 0 ? walk() : start())}
-                >
-                  {t("common.retry")}
-                </Button>
-              </Empty>
+              <QueryErrorState
+                className="min-h-72 border text-muted-foreground"
+                isRetrying={pending}
+                onRetry={() => void (steps.length > 0 ? walk() : start())}
+              />
             )}
             {!pending && !loadError && steps.length === 0 && (
               <Empty className="min-h-72 border border-border/60 bg-card/50 motion-safe:animate-rise">

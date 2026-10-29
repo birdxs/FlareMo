@@ -19,7 +19,7 @@ export function ComposerTagSuggestions({
   if (!visible) return null;
   return (
     <div
-      className="absolute inset-x-4 bottom-12 z-30 max-h-56 overflow-y-auto rounded-lg border border-border bg-popover py-1 shadow-md motion-safe:animate-rise"
+      className="absolute inset-x-4 bottom-12 z-30 max-h-56 overflow-y-auto rounded-lg border border-border/60 bg-popover py-1 shadow-lg motion-safe:animate-rise"
       data-testid="composer-tag-suggestions"
     >
       {suggestions.map((suggestion) => (
@@ -62,7 +62,7 @@ export function ComposerWikiSuggestions({
   if (!visible) return null;
   return (
     <div
-      className="absolute inset-x-4 bottom-12 z-30 max-h-56 overflow-y-auto rounded-lg border border-border bg-popover py-1 shadow-md motion-safe:animate-rise divide-y divide-border/20"
+      className="absolute inset-x-4 bottom-12 z-30 max-h-56 overflow-y-auto rounded-lg border border-border/60 bg-popover py-1 shadow-lg motion-safe:animate-rise divide-y divide-border/20"
       data-testid="composer-wikilink-suggestions"
     >
       {suggestions.map((memo) => {

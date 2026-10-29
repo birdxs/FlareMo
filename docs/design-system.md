@@ -11,6 +11,7 @@ FlareMo 的视觉语言叫 Ember：界面保持安静，暖调中性色承担约
 - 品牌色阶 `--flame-50` ~ `--flame-700` + `--flame-coral`(Tailwind 类 `flame-*`)。`--flame-500` 是亮色模式主行动色（白底对比度达标），暗色模式用 `--flame-400`。
 - 中性色带暖调（hue 60–80，小 chroma)，不要用纯灰。
 - 语义色：`primary` / `secondary` / `muted` / `accent` / `destructive` / `success` / `warning` / `info` 及各自的 `-foreground`。
+- 状态色有两种文字 token：`-foreground` 只用于**实心底**上的文字（暗色下是深色）；**浅色底（10% 左右 tint）**上的文字用 `success-emphasis` / `warning-emphasis` / `info-emphasis`，两套主题都保证可读。提示条用 `Alert` 的 `warning` / `success` / `info` / `destructive` 变体，状态徽标用 `Badge` 的 `success` / `warning` / `info` 变体；不要再手写 `amber-*` / `emerald-*` / `blue-*` 等原始色板类。原始色板只允许出现在纯装饰处（头像哈希配色、外观设置的主题预览色块）。
 - 品牌渐变 `--gradient-brand`(Tailwind 类 `bg-brand-gradient`）只允许出现在四处：logo、主 CTA（如发送按钮）、置顶标记、选中态指示条。一屏最多一个渐变 CTA。
 - 悬浮/hover 的品牌浅底用 `accent`（亮色 flame-50 / 暗色 flame 深底），不要用冷灰。
 
@@ -19,7 +20,7 @@ FlareMo 的视觉语言叫 Ember：界面保持安静，暖调中性色承担约
 - 字体栈：Geist Variable + CJK 回退，**按语言域分派**——`--font-cjk` 与 `--font-cjk-serif` 在 `:root` / `:root:lang(ja)` / `:root:lang(ko)` 三处分别定义，日韩各拿自己的字形。新增 UI 文本不要绕过 `font-sans`；分享卡插件另可选 `sans` / `heading` / `serif` / `mono` 四档。
 - **全站统一排版阶梯（Type Scale）**：
   - **Display / 统计大数**：`text-2xl leading-none font-semibold tabular-nums`
-  - **页面大标题 (H1)**：`text-lg sm:text-xl font-semibold tracking-tight`
+  - **页面大标题 (H1)**：`text-lg sm:text-xl font-semibold tracking-tight`。例外：`WorkspacePageHeader` 是 h-14 吸顶工具栏，标题保持 `text-sm sm:text-base`，与工具栏控件同一视觉重量。
   - **弹窗/区域大标题 (H2)**：`text-base font-semibold tracking-tight`
   - **分组标签 (H3/Label)**：`text-xs font-medium text-muted-foreground`（去除全大写与非拉丁宽字距）
   - **侧边栏与主导航项**：统一为 `h-9 rounded-lg px-2.5 text-sm`，图标基准尺寸统一为 `size-4 shrink-0`；未激活态为 `text-muted-foreground hover:bg-muted hover:text-foreground`，激活态统一使用柔和的 `bg-accent text-accent-foreground font-medium`（主侧边栏与设置页侧边栏统一遵循此规则，严禁设置页使用高饱和实心大橙块或 iOS 仿生五彩图标徽章）。
@@ -30,8 +31,8 @@ FlareMo 的视觉语言叫 Ember：界面保持安静，暖调中性色承担约
 
 ## 形状与层级
 
-- 圆角基准 `--radius: 0.75rem`：控件 8px(md)、卡片/composer 12px(xl)、浮层 14px、标签 chip 全圆角。
-- 层级规则：页面 `bg-background` → 卡片 `bg-card + shadow-xs` → 浮层 `bg-popover + shadow-lg`。亮色模式用暖调阴影（`--shadow-xs/sm/md/lg`)；暗色模式不用阴影表达层级——`.dark` 的 shadow token 置近零，靠表面明度阶梯（实测值 0.155 / 0.21 / 0.235）+ 发丝线区分层级。
+- 圆角基准 `--radius: 0.875rem`（与 KOSX 家族对齐，见提交 `1b4d0e2e`），阶梯按倍数推导：`md` ≈ 11px（小控件、菜单项、tooltip）、`lg` 14px（按钮 / 输入框 / 下拉 / 浮层）、`xl` ≈ 20px（卡片、Dialog、设置分组）；小尺寸按钮（`sm` / `xs`）圆角随高度收小，标签 chip 全圆角。
+- 层级规则：页面 `bg-background` → 卡片 `bg-card + shadow-xs` → 浮层 `bg-popover + shadow-lg`（DropdownMenu、AlertDialog、composer 建议列表、Spotlight 统一 `shadow-lg` + 发丝线）。`shadow-2xs` / `shadow-xl` / `shadow-2xl` 已在 `@theme` 中别名到暖调阶梯（2xs→xs，xl/2xl→lg），暗色下同样归零；不要再引入 Tailwind 默认的冷黑阴影。亮色模式用暖调阴影（`--shadow-xs/sm/md/lg`)；暗色模式不用阴影表达层级——`.dark` 的 shadow token 置近零，靠表面明度阶梯（实测值 0.155 / 0.21 / 0.235）+ 发丝线区分层级。
 - 分隔用发丝线 `border-border/60`，不要用粗重边框。
 
 ## 动效
@@ -51,8 +52,10 @@ token:`animate-rise`(200ms expo 入场）、`animate-fade`(140ms)、`animate-sca
 - 基于 shadcn(radix-nova)+ cva，新组件先进 `apps/web/src/components/ui/`。
 - `Button` 的 `brand` 变体是渐变 CTA，一屏最多一个；`Badge` 的 `flame` 变体用于标签 chip。
 - 笔记编辑是就地编辑（in-place)，不要新开 Dialog；`Esc` 取消、`Cmd/Ctrl+Enter` 保存。
-- 骨架屏用 `Skeleton`(shimmer)，不要用 `animate-pulse`。
-- 破坏性操作必须二次确认（AlertDialog)；变更用乐观更新 + toast 反馈。
+- 骨架屏用 `Skeleton`(shimmer)，不要用 `animate-pulse`；图表/热力图加载中用 `opacity-50` 降低存在感，不要闪烁。真实状态指示（录音中）用 `animate-partial-pulse` / `animate-signal-ring`。
+- 破坏性操作必须二次确认（AlertDialog，不要用 `window.confirm`)；变更用乐观更新 + toast 反馈，按钮在 pending 期间禁用，防止重复提交。
+- 查询失败统一用 `QueryErrorState`（带重试），不要手写 Empty 版错误态，也不要在失败时静默回退成空态——尤其是设置表单：加载失败时渲染默认值会让用户保存时覆盖真实配置。
+- 品牌色阶只有 `50`–`700` + `coral`，没有 `800`/`900`/`950`；写了不存在的档位的类会静默失效。
 
 ## 文案
 

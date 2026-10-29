@@ -4,6 +4,7 @@ import { CalendarDaysIcon, PlusIcon } from "lucide-react";
 import { useMemo } from "react";
 import { getDailyReview, listMemos, type Memo } from "@/api";
 import { MemoSnapshotCard } from "@/components/memo-snapshot-card";
+import { QueryErrorState } from "@/components/query-error-state";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -49,6 +50,13 @@ export function DailyReviewPage() {
   );
 
   const isInitialLoading = reviewQuery.isLoading;
+  // The ladder only runs when on-this-day came back empty; a failed ladder
+  // must surface as an error rather than masquerade as "nothing to review".
+  const failedQuery = reviewQuery.isError
+    ? reviewQuery
+    : intervalQuery.isError
+      ? intervalQuery
+      : null;
 
   return (
     <WorkspaceLayout
@@ -80,26 +88,18 @@ export function DailyReviewPage() {
             <Skeleton className="h-32 w-full" />
           </div>
         )}
-        {reviewQuery.isError && (
-          <Empty className="min-h-72 border">
-            <EmptyHeader>
-              <EmptyTitle>{t("list.errorTitle")}</EmptyTitle>
-              <EmptyDescription>{t("list.errorDescription")}</EmptyDescription>
-            </EmptyHeader>
-            <Button
-              className="mt-2"
-              size="sm"
-              variant="outline"
-              onClick={() => void reviewQuery.refetch()}
-            >
-              {t("common.retry")}
-            </Button>
-          </Empty>
+        {failedQuery && (
+          <QueryErrorState
+            className="min-h-72 border text-muted-foreground"
+            isRetrying={failedQuery.isFetching}
+            onRetry={() => void failedQuery.refetch()}
+          />
         )}
         {reviewQuery.data &&
           !isInitialLoading &&
           groups.length === 0 &&
-          !intervalQuery.isLoading && (
+          !intervalQuery.isLoading &&
+          !intervalQuery.isError && (
             <Empty className="min-h-72 border border-border/60 bg-card/50 motion-safe:animate-rise">
               <EmptyHeader>
                 <EmptyMedia

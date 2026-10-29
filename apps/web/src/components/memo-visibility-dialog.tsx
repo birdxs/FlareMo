@@ -208,7 +208,7 @@ export function MemoVisibilityDialog({
               >
                 {copied ? (
                   <>
-                    <CheckIcon className="size-3.5 text-emerald-600 dark:text-emerald-400 motion-safe:animate-scale-in" />
+                    <CheckIcon className="size-3.5 text-success-emphasis motion-safe:animate-scale-in" />
                     <span>{t("toast.linkCopied")}</span>
                   </>
                 ) : (

@@ -3,6 +3,7 @@ import { Loader2Icon, PlusIcon } from "lucide-react";
 import { useState } from "react";
 import type { PersonalAccessToken } from "@/api";
 import { SecretRevealDialog } from "@/components/secret-reveal-dialog";
+import { Alert } from "@/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -104,9 +105,7 @@ export function AccountTokensSection({
       >
         {tokenError && (
           <div className="p-3">
-            <p className="rounded-lg border border-destructive/30 bg-destructive/8 px-3 py-2 text-sm text-destructive">
-              {tokenError}
-            </p>
+            <Alert variant="destructive">{tokenError}</Alert>
           </div>
         )}
 

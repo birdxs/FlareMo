@@ -1,15 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowLeftIcon, BrainIcon, FileTextIcon } from "lucide-react";
 import type { Memo, MemoContext, RelatedMemo } from "@/api";
+import { QueryErrorState } from "@/components/query-error-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WorkspaceLayout } from "@/components/workspace/workspace-layout";
@@ -86,15 +81,22 @@ export function MemoDetailPage({ memoId }: { memoId: string }) {
             // reading `memos/a60cdd29-…` identifies the row to the database
             // and to nobody else. Falls back to the timestamp for a memo whose
             // body is only tags or media.
-            <span className="truncate" title={contextQuery.data?.memo.name}>
-              {memoTitle(contextQuery.data?.memo.content ?? "") ||
-                (contextQuery.data
-                  ? formatMemoRelativeTime(
-                      contextQuery.data.memo.create_time,
-                      locale,
-                    )
-                  : t("common.loading"))}
-            </span>
+            contextQuery.data ? (
+              <span className="truncate" title={contextQuery.data.memo.name}>
+                {memoTitle(contextQuery.data.memo.content) ||
+                  formatMemoRelativeTime(
+                    contextQuery.data.memo.create_time,
+                    locale,
+                  )}
+              </span>
+            ) : contextQuery.isError ? (
+              t("detail.unavailable")
+            ) : (
+              <>
+                <Skeleton aria-hidden className="h-4 w-40" />
+                <span className="sr-only">{t("common.loading")}</span>
+              </>
+            )
           }
           toggleSidebarCollapsed={toggleSidebarCollapsed}
         />
@@ -108,12 +110,11 @@ export function MemoDetailPage({ memoId }: { memoId: string }) {
           </div>
         )}
         {contextQuery.isError && (
-          <Empty className="min-h-72 border">
-            <EmptyHeader>
-              <EmptyTitle>{t("detail.unavailable")}</EmptyTitle>
-              <EmptyDescription>{t("list.errorDescription")}</EmptyDescription>
-            </EmptyHeader>
-          </Empty>
+          <QueryErrorState
+            className="min-h-72 border text-muted-foreground"
+            isRetrying={contextQuery.isFetching}
+            onRetry={() => void contextQuery.refetch()}
+          />
         )}
         {contextQuery.data && (
           <MemoDetail

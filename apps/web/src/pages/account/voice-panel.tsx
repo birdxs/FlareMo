@@ -9,6 +9,7 @@ import {
   testVoiceSettings,
   type VoiceSettings,
 } from "@/api";
+import { QueryErrorState } from "@/components/query-error-state";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -202,6 +203,16 @@ export function VoicePanel() {
         <Skeleton className="h-12 w-full rounded-xl" />
         <Skeleton className="h-28 w-full rounded-xl" />
       </div>
+    );
+  }
+  // Without the stored settings the form would show defaults, so a failed
+  // load gets a retry instead of an editable-looking but wrong panel.
+  if (!config && settingsQuery.isError) {
+    return (
+      <QueryErrorState
+        isRetrying={settingsQuery.isFetching}
+        onRetry={() => void settingsQuery.refetch()}
+      />
     );
   }
 

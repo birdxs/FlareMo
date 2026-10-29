@@ -414,7 +414,7 @@ export const FlareMoTimeHorizon = memo(function FlareMoTimeHorizon({
       </div>
 
       {/* ── Bottom Single-Line Micro Tooltip (Hover Details Only) ────────── */}
-      <div className="flex h-4 items-center justify-between px-1 text-[11px] text-muted-foreground select-none">
+      <div className="flex h-4 items-center justify-between px-1 text-xs text-muted-foreground select-none">
         <span className="truncate">{hoveredTip ?? ""}</span>
       </div>
     </div>

@@ -258,7 +258,7 @@ export function SpotlightSearch({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="top-[20%] translate-y-0 w-full max-w-lg overflow-hidden rounded-2xl border border-border/80 bg-popover/95 p-0 shadow-2xl backdrop-blur-xl sm:max-w-xl"
+        className="top-[20%] translate-y-0 w-full max-w-lg overflow-hidden rounded-xl border border-border/60 bg-popover/95 p-0 shadow-lg backdrop-blur-xl sm:max-w-xl"
       >
         <DialogTitle className="sr-only">{t("common.search")}</DialogTitle>
 
@@ -364,7 +364,7 @@ export function SpotlightSearch({
                         {item.title}
                       </p>
                       {item.subtitle && (
-                        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
                           {item.subtitle}
                         </p>
                       )}

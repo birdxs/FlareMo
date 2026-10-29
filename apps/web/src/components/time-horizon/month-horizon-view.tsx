@@ -106,7 +106,7 @@ export function MonthHorizonPureView({
           (colId, i) => (
             <div
               className={cn(
-                "text-center text-[10px] font-medium font-mono transition-opacity",
+                "text-center text-xs font-medium transition-opacity",
                 displayMode === "calendar"
                   ? "text-foreground/75 dark:text-foreground/70 font-semibold"
                   : "text-foreground/60 dark:text-foreground/50",
@@ -145,11 +145,11 @@ export function MonthHorizonPureView({
           // ── 100% 对齐年视图：统一采用相同的质感与深浅阶梯 ──
           const activityStyle =
             totalCount <= 0
-              ? "border-transparent bg-muted-foreground/15 dark:bg-muted/30 text-foreground/75 dark:text-foreground/70 hover:bg-muted-foreground/25 dark:hover:bg-muted/45"
+              ? "border-transparent bg-muted dark:bg-muted/40 text-foreground/70 hover:bg-muted-foreground/15 dark:hover:bg-muted/70"
               : totalCount === 1
-                ? "border-primary/20 bg-primary/35 dark:border-primary/30 dark:bg-primary/30 text-brand-900 dark:text-white font-semibold shadow-2xs hover:bg-primary/45"
+                ? "border-primary/20 bg-primary/35 dark:border-primary/30 dark:bg-primary/30 text-brand-700 dark:text-white font-semibold shadow-2xs hover:bg-primary/45"
                 : totalCount === 2
-                  ? "border-primary/30 bg-primary/55 dark:border-primary/40 dark:bg-primary/50 text-brand-950 dark:text-white font-bold shadow-2xs hover:bg-primary/65"
+                  ? "border-primary/30 bg-primary/55 dark:border-primary/40 dark:bg-primary/50 text-brand-700 dark:text-white font-bold shadow-2xs hover:bg-primary/65"
                   : totalCount <= 4
                     ? "border-primary/50 bg-primary/75 dark:border-primary/60 dark:bg-primary/75 text-white font-bold shadow-xs hover:bg-primary/85"
                     : "border-primary bg-primary text-white dark:border-primary dark:bg-primary font-bold shadow-sm hover:brightness-110";
@@ -197,13 +197,13 @@ export function MonthHorizonPureView({
               {displayMode === "calendar" ? (
                 <span
                   className={cn(
-                    "text-[12px] font-mono tabular-nums leading-none transition-opacity group-hover:opacity-0",
+                    "text-xs font-mono tabular-nums leading-none transition-opacity group-hover:opacity-0",
                     totalCount >= 3
                       ? "text-white font-bold drop-shadow-2xs"
                       : totalCount === 2
-                        ? "text-brand-950 dark:text-white font-bold"
+                        ? "text-brand-700 dark:text-white font-bold"
                         : totalCount === 1
-                          ? "text-brand-800 dark:text-brand-200 font-semibold"
+                          ? "text-brand-700 dark:text-brand-200 font-semibold"
                           : "text-foreground/85 font-medium",
                   )}
                 >
