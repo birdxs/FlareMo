@@ -151,7 +151,6 @@ const messages = {
   "nav.dailyReview": "往年今日",
   "nav.randomWalk": "记忆漫游",
   "nav.memory": "记忆",
-  "nav.teamProjects": "团队项目",
   "nav.projects": "待办",
   "nav.capture": "语音记录",
   "capture.title": "语音记录",

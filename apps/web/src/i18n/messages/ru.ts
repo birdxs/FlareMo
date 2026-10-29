@@ -162,7 +162,6 @@ const messages = {
   "nav.dailyReview": "В этот день",
   "nav.randomWalk": "Прогулка по памяти",
   "nav.memory": "Память",
-  "nav.teamProjects": "Team projects",
   "nav.projects": "Задачи",
   "nav.capture": "Голосовая запись",
   "capture.title": "Голосовая запись",

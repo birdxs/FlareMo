@@ -164,7 +164,6 @@ const messages = {
   "nav.dailyReview": "Ce jour-là",
   "nav.randomWalk": "Balade",
   "nav.memory": "Mémoire",
-  "nav.teamProjects": "Team projects",
   "nav.projects": "Tâches",
   "nav.capture": "Capture vocale",
   "capture.title": "Capture vocale",

@@ -22,7 +22,7 @@
     "format:check": "biome ci AGENTS.md CHANGELOG.md CODE_OF_CONDUCT.md CONTRIBUTING.md README.md README.*.md ROADMAP.md SECURITY.md SUPPORT.md llms.txt package.json tsconfig.json tsconfig.base.json vitest.config.ts playwright.config.ts drizzle.config.ts wrangler.jsonc docs scripts harness apps packages plugins tests",
     "typecheck": "pnpm --filter @flaremo/site typecheck && pnpm --filter @flaremo/telegram-bot-example typecheck && pnpm --filter @flaremo/web typecheck && pnpm --filter @flaremo/worker typecheck && pnpm --filter @flaremo/contracts typecheck && pnpm --filter @flaremo/db typecheck && pnpm --filter @flaremo/domain typecheck && pnpm --filter @flaremo/memos typecheck && pnpm --filter @flaremo/plugins typecheck",
     "test": "pnpm test:root && pnpm -r test",
-    "test:root": "vitest run --config ./vitest.config.ts tests/harness tests/team-projects",
+    "test:root": "vitest run --config ./vitest.config.ts tests/harness",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:capture:webkit": "playwright test --config ./tests/playwright.capture-webkit.config.ts",
