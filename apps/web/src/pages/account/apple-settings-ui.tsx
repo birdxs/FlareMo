@@ -42,7 +42,7 @@ export function SettingsSectionGroup({
           {title}
         </div>
       )}
-      <div className="overflow-hidden rounded-xl border border-border/60 bg-card divide-y divide-border/40 shadow-xs">
+      <div className="paper overflow-hidden rounded-xl border border-border/60 bg-card divide-y divide-border/40 shadow-xs">
         {children}
       </div>
       {footer && (

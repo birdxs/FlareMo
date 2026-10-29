@@ -136,7 +136,7 @@ export const FlareMoExplorer = memo(function FlareMoExplorer({
       </header>
 
       <section className="mb-3 px-1 motion-safe:animate-rise">
-        <div className="grid grid-cols-3 divide-x divide-border/60 rounded-xl border border-border/60 bg-card py-3 shadow-xs">
+        <div className="paper grid grid-cols-3 divide-x divide-border/60 rounded-xl border border-border/60 bg-card py-3 shadow-xs">
           <StatCell label={t("explorer.records")} value={stats.counts.total} />
           <StatCell label={t("explorer.tags")} value={stats.tags.length} />
           <StatCell label={t("explorer.streak")} value={streak} />

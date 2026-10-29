@@ -145,7 +145,7 @@ export function MemoComposer({
 
   return (
     <form
-      className="group relative flex w-full flex-col rounded-xl border border-border/80 bg-card shadow-xs motion-safe:animate-rise motion-safe:transition-[border-color,box-shadow] motion-safe:duration-200 focus-within:border-ring/60 focus-within:shadow-sm focus-within:ring-3 focus-within:ring-ring/15"
+      className="paper group relative flex w-full flex-col rounded-xl border border-border/80 bg-card shadow-xs motion-safe:animate-rise motion-safe:transition-[border-color,box-shadow] motion-safe:duration-200 focus-within:border-[color-mix(in_oklch,var(--input),var(--foreground)_10%)] focus-within:shadow-md"
       data-compact={isCompact ? "true" : undefined}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) {
@@ -201,7 +201,7 @@ export function MemoComposer({
           })
         }
       />
-      <div className="flex h-10 items-center justify-between gap-2 rounded-b-xl bg-card px-3 pb-1">
+      <div className="flex h-11 items-center justify-between gap-2 rounded-b-xl border-t border-border/50 px-2.5 motion-safe:transition-colors group-data-[compact=true]:border-transparent">
         <ComposerToolbar
           draft={draft}
           isPending={isPending}

@@ -1,26 +1,88 @@
 import type { Editor } from "@tiptap/react";
 import {
   CalendarPlusIcon,
-  CheckSquareIcon,
   HashIcon,
-  ImageIcon,
+  ImagePlusIcon,
   ListIcon,
   ListOrderedIcon,
+  ListTodoIcon,
   Maximize2Icon,
   MicIcon,
 } from "lucide-react";
+import type { ComponentProps, ReactElement, ReactNode } from "react";
 import { loadComposerFocusCanvas } from "@/components/composer/composer-focus-canvas-lazy";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useI18n } from "@/i18n";
 import type { MemoCaptureInput } from "@/lib/local-memo-capture";
+import { cn } from "@/lib/utils";
 
 /**
- * Formatting rail of the composer: tag, attachment picker, the three list
- * toggles, the date stamp, and the voice entry. It is the left half of the
- * composer's bottom bar, rendered next to the visibility menu and the round
- * send button. Every editor action goes through `withEditor`, which no-ops
- * while a submission is pending.
+ * One composer tool: a quiet 28px ghost button whose icon sits in muted ink
+ * and darkens on hover. The label is both the accessible name and a delayed
+ * tooltip, so every tool explains itself the same way (previously only two
+ * of the eight had a `title`).
+ */
+function ToolButton({
+  label,
+  active,
+  render,
+  className,
+  children,
+  ...props
+}: Omit<ComponentProps<typeof Button>, "render"> & {
+  label: string;
+  active?: boolean;
+  render?: ReactElement;
+  children: ReactNode;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        delay={450}
+        render={
+          <Button
+            aria-label={label}
+            aria-pressed={active}
+            className={cn(
+              "text-muted-foreground hover:text-foreground aria-pressed:bg-accent aria-pressed:text-primary",
+              className,
+            )}
+            render={render}
+            size="icon-sm"
+            type={render ? undefined : "button"}
+            variant="ghost"
+            {...props}
+          />
+        }
+      >
+        {children}
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function ToolDivider() {
+  return (
+    <span
+      aria-hidden="true"
+      className="mx-1 hidden h-4 w-px shrink-0 bg-border sm:block"
+    />
+  );
+}
+
+/**
+ * Formatting rail of the composer, in three groups: insert (tag, image),
+ * structure (lists), and capture (date, voice, fullscreen). It is the left
+ * half of the composer's bottom bar, next to the visibility menu and send.
+ * Every editor action goes through `withEditor`, which no-ops while a
+ * submission is pending.
  */
 export function ComposerToolbar({
   draft,
@@ -45,13 +107,10 @@ export function ComposerToolbar({
 }) {
   const { t } = useI18n();
   return (
-    <div className="flex min-w-0 items-center gap-0.5 sm:gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden py-0.5">
-      <Button
-        aria-label={t("composer.addTag")}
+    <div className="flex min-w-0 items-center gap-0.5 overflow-x-auto py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <ToolButton
         disabled={isPending}
-        size="icon-sm"
-        type="button"
-        variant="ghost"
+        label={t("composer.addTag")}
         onClick={() =>
           withEditor((editor) => {
             editor
@@ -63,25 +122,19 @@ export function ComposerToolbar({
         }
       >
         <HashIcon />
-      </Button>
-      <Button
-        render={
-          <label
-            aria-label={t("composer.addAttachment")}
-            htmlFor="flaremo-attachment-input"
-          />
-        }
+      </ToolButton>
+      <ToolButton
         disabled={isPending}
-        size="icon-sm"
-        variant="ghost"
+        label={t("composer.addAttachment")}
+        render={<label htmlFor="flaremo-attachment-input" />}
       >
-        <ImageIcon />
+        <ImagePlusIcon />
         <Input
           className="hidden"
+          disabled={isPending}
           id="flaremo-attachment-input"
           multiple
           type="file"
-          disabled={isPending}
           onChange={(event) => {
             const files = Array.from(event.target.files ?? []);
             event.target.value = "";
@@ -92,14 +145,11 @@ export function ComposerToolbar({
             });
           }}
         />
-      </Button>
-      <div className="hidden h-4 w-px bg-border sm:block" />
-      <Button
-        aria-label={t("composer.bulletList")}
+      </ToolButton>
+      <ToolDivider />
+      <ToolButton
         disabled={isPending}
-        size="icon-sm"
-        type="button"
-        variant="ghost"
+        label={t("composer.bulletList")}
         onClick={() =>
           withEditor((editor) => {
             editor.chain().focus().toggleBulletList().run();
@@ -107,13 +157,10 @@ export function ComposerToolbar({
         }
       >
         <ListIcon />
-      </Button>
-      <Button
-        aria-label={t("composer.orderedList")}
+      </ToolButton>
+      <ToolButton
         disabled={isPending}
-        size="icon-sm"
-        type="button"
-        variant="ghost"
+        label={t("composer.orderedList")}
         onClick={() =>
           withEditor((editor) => {
             editor.chain().focus().toggleOrderedList().run();
@@ -121,68 +168,55 @@ export function ComposerToolbar({
         }
       >
         <ListOrderedIcon />
-      </Button>
-      <Button
-        aria-label={t("composer.taskList")}
+      </ToolButton>
+      <ToolButton
         disabled={isPending}
-        size="icon-sm"
-        type="button"
-        variant="ghost"
+        label={t("composer.taskList")}
         onClick={() =>
           withEditor((editor) => {
             editor.chain().focus().toggleTaskList().run();
           })
         }
       >
-        <CheckSquareIcon />
-      </Button>
-      <Button
-        aria-label={t("composer.insertDate")}
+        <ListTodoIcon />
+      </ToolButton>
+      <ToolDivider />
+      <ToolButton
         disabled={isPending}
-        size="icon-sm"
-        type="button"
-        variant="ghost"
+        label={t("composer.insertDate")}
         onClick={() =>
           withEditor((editor) => {
             const today = new Date().toISOString().slice(0, 10);
             editor.chain().focus().insertContent(`${today} `).run();
           })
         }
-        title={t("composer.insertDate")}
       >
         <CalendarPlusIcon />
-      </Button>
+      </ToolButton>
       {captureAvailable && (
-        <Button
-          aria-label={t("composer.voice")}
-          className={voiceActive ? "text-brand-600" : undefined}
+        <ToolButton
+          active={voiceActive}
           disabled={isPending}
-          size="icon-sm"
-          type="button"
-          variant="ghost"
+          label={t("composer.voice")}
           onClick={() => {
             if (voiceActive) return;
             onStartVoice();
           }}
         >
           <MicIcon />
-        </Button>
+        </ToolButton>
       )}
       {onExpand && (
-        <Button
-          aria-label={t("composer.fullscreen.open")}
+        <ToolButton
           disabled={isPending}
-          size="icon-sm"
-          type="button"
-          variant="ghost"
+          label={t("composer.fullscreen.open")}
           onClick={onExpand}
           onMouseEnter={() => {
             void loadComposerFocusCanvas();
           }}
-          title={t("composer.fullscreen.open")}
         >
           <Maximize2Icon />
-        </Button>
+        </ToolButton>
       )}
     </div>
   );

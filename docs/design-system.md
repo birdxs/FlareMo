@@ -17,6 +17,25 @@ Ember 2（2026-10）在此基础上收紧了三件事：**墨色是默认、火�
 - 品牌渐变 `--gradient-brand`(Tailwind 类 `bg-brand-gradient`）只允许出现在：logo、composer 发送按钮（`Button variant="gradient"`）、置顶记录的内嵌指示条、认证页品牌区的短横线。其余主 CTA 一律用实色 `brand`。
 - hover 用暖调 `muted`；`accent`（品牌浅底）只留给少数需要品牌暗示的小面积状态（如铁律开关），不用于导航激活态。
 
+## 纸张质感（Paper）
+
+整个产品是一叠纸：
+
+- **纸色**：亮色背景是奶白纸（`--background` hue 82、chroma 0.0075），卡片是略亮的米白而非纯白；暗色是「台灯下的纸」，表面保持暖调（hue 70），不走中性灰。
+- **纸纹**：`--paper-grain` 是一张内联 SVG 分形噪声贴图（约 400 字节，无网络请求），亮色约 6% 暖墨、暗色约 3.5% 亮斑。`body` 全局铺一层；纸面元素加 `.paper` 再铺一层并得到「受光的顶边」（`--paper-edge`，通过 Tailwind 的 `--tw-inset-shadow` 槽位叠加，不会吃掉 ring 和投影）。
+- **哪些是纸**：记录卡、composer、`Card`、设置分组、侧栏统计卡与日历画布。浮层（Dialog、菜单、Toast）是玻璃，不加纸纹。
+- **图标笔画**：lucide 默认 2px 全局降为 1.75px（只覆盖默认值，显式 `strokeWidth` 仍生效），与 Geist 在 UI 字号下的笔画重量一致。
+
+### 公开阅读页（分享 / 文章）
+
+`/share/:token` 与 `/article/:slug` 是 Worker 渲染的零 JS 文档，样式统一在 `apps/worker/src/routes/paper-page-styles.ts`：
+
+- 一张带纸纹的纸放在稍深的「书桌」上，下面压着一张微微旋转的纸（窄屏隐藏）。
+- 正文用衬线：拉丁 Iowan Old Style / Palatino / Georgia，汉字按 `<html lang>` 选宋体 / 明朝 / 明朝体韩文，17px / 1.9。
+- 唯一的颜色是一枚火焰色「印章」圆点（刊头）和链接下划线；引用是一条火焰色细线；分隔线是「· · ·」。
+- 刊头是邮戳式日期 `2026 · 10 · 29`，结尾是信笺式落款 `— 作者　写于 2026年10月29日`，页脚一行「在 FlareMo 里，安静地记下想法」。
+- 失效页是一张微斜的小纸条：「这张纸条已经被收回，或从未寄出。」
+
 ## 字体与排版
 
 - 字体栈：Geist Variable + CJK 回退，**按语言域分派**——`--font-cjk` 与 `--font-cjk-serif` 在 `:root` / `:root:lang(ja)` / `:root:lang(ko)` 三处分别定义，日韩各拿自己的字形。新增 UI 文本不要绕过 `font-sans`；分享卡插件另可选 `sans` / `heading` / `serif` / `mono` 四档。
@@ -57,6 +76,7 @@ token:`animate-rise`(200ms expo 入场）、`animate-fade`(140ms)、`animate-sca
 - **FilterPill**：未激活为卡片底 + 发丝线，激活为墨色实底。
 - **标签 chip**：阅读面上用 `Badge variant="tag"`（中性 muted 底），不再用品牌浅底；编辑器内的 `#tag` 输入高亮仍用品牌色。
 - **记录卡**：实色卡片底 + `shadow-xs`，hover 只加深描边与阴影，不位移。
+- **Composer**：纸面卡片，聚焦时只加深描边并抬高阴影（不画焦点环，写字的地方不该像表单）。底栏与正文之间一条发丝线，空闲收起时隐去。工具按钮统一 `ToolButton`：28px ghost、muted 图标、450ms 延迟 tooltip，分三组（插入 / 结构 / 采集）以竖线分隔。发送按钮空闲时是灰色圆盘，有内容时才点亮渐变，纸飞机悬停时向右上抬 1px；有内容时左侧淡入 `⌘↵` / `Ctrl ↵` 提示（在按钮外，按钮的无障碍名保持「发送」）。
 - **日历热力图**：无记录的日期不铺底色；热度用 primary 的 12% / 24% / 45% / 实色四档；选中是墨色细环，今日用字重 + 下方小圆点。
 
 - 基于 shadcn(radix-nova)+ cva，新组件先进 `apps/web/src/components/ui/`。

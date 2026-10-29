@@ -340,7 +340,7 @@ export const FlareMoTimeHorizon = memo(function FlareMoTimeHorizon({
 
       {/* ── Unified High-Impact Canvas Container (~240px Tall) ─────────────── */}
       <div
-        className="relative flex min-h-[238px] flex-col justify-center overflow-hidden rounded-xl border border-border/60 bg-card p-2.5 shadow-xs"
+        className="paper relative flex min-h-[238px] flex-col justify-center overflow-hidden rounded-xl border border-border/60 bg-card p-2.5 shadow-xs"
         data-testid="activity-heatmap"
       >
         <div
