@@ -28,6 +28,7 @@
     "@tanstack/react-router": "^1.140.0",
     "@tanstack/react-virtual": "^3.14.22",
     "@tiptap/core": "^3.31.3",
+    "@tiptap/extension-bubble-menu": "^3.31.3",
     "@tiptap/extension-code-block-lowlight": "^3.31.3",
     "@tiptap/extension-image": "^3.31.3",
     "@tiptap/extension-list": "^3.31.3",

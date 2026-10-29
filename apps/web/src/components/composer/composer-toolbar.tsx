@@ -1,90 +1,61 @@
 import type { Editor } from "@tiptap/react";
 import {
+  BoldIcon,
   CalendarPlusIcon,
   HashIcon,
+  Heading2Icon,
   ImagePlusIcon,
+  ItalicIcon,
   ListIcon,
   ListOrderedIcon,
   ListTodoIcon,
   Maximize2Icon,
   MicIcon,
+  QuoteIcon,
+  SquareCodeIcon,
 } from "lucide-react";
-import type { ComponentProps, ReactElement, ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { loadComposerFocusCanvas } from "@/components/composer/composer-focus-canvas-lazy";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { useI18n } from "@/i18n";
+  type ActiveFormats,
+  FORMAT_SHORTCUTS,
+  toggleFormat,
+} from "@/components/composer/format-actions";
+import { ToolButton, ToolDivider } from "@/components/composer/tool-button";
+import { Input } from "@/components/ui/input";
+import { type TranslationKey, useI18n } from "@/i18n";
 import { todayKey } from "@/lib/calendar-date";
-import { cn } from "@/lib/utils";
 
-/**
- * One composer tool: a quiet 28px ghost button whose icon sits in muted ink
- * and darkens on hover. The label is both the accessible name and a delayed
- * tooltip, so every tool explains itself the same way (previously only two
- * of the eight had a `title`).
- */
-function ToolButton({
-  label,
-  active,
-  render,
-  className,
-  children,
-  ...props
-}: Omit<ComponentProps<typeof Button>, "render"> & {
-  label: string;
-  active?: boolean;
-  render?: ReactElement;
-  children: ReactNode;
-}) {
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        delay={450}
-        render={
-          <Button
-            aria-label={label}
-            aria-pressed={active}
-            className={cn(
-              "text-muted-foreground hover:text-foreground aria-pressed:bg-accent aria-pressed:text-primary",
-              className,
-            )}
-            render={render}
-            size="icon-sm"
-            type={render ? undefined : "button"}
-            variant="ghost"
-            {...props}
-          />
-        }
-      >
-        {children}
-      </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
-    </Tooltip>
-  );
+/** True while tools are cut off past the rail's trailing edge. RTL reports
+ * scrollLeft from 0 down to negative, so measure the distance. */
+function hasMoreToEnd(rail: HTMLElement) {
+  return Math.abs(rail.scrollLeft) + rail.clientWidth < rail.scrollWidth - 1;
 }
 
-function ToolDivider() {
-  return (
-    <span
-      aria-hidden="true"
-      className="mx-1 hidden h-4 w-px shrink-0 bg-border sm:block"
-    />
-  );
-}
+/** Block and inline formats the composer exposes as buttons. Italic, strike
+ * and inline code live in the selection bubble only, to keep the rail short. */
+const FORMAT_TOOLS: {
+  id: "heading" | "bold" | "italic" | "quote" | "codeBlock";
+  label: TranslationKey;
+  icon: typeof BoldIcon;
+}[] = [
+  { id: "heading", label: "composer.heading", icon: Heading2Icon },
+  { id: "bold", label: "article.toolBold", icon: BoldIcon },
+  { id: "italic", label: "article.toolItalic", icon: ItalicIcon },
+  { id: "quote", label: "article.toolQuote", icon: QuoteIcon },
+  { id: "codeBlock", label: "composer.codeBlock", icon: SquareCodeIcon },
+];
 
 /**
- * Formatting rail of the composer, in three groups: insert (tag, image),
- * structure (lists), and capture (date, voice, fullscreen). It is the left
+ * Formatting rail of the composer, in four groups: insert (tag, image),
+ * format (heading, bold, italic, quote, code block), lists, and capture
+ * (date, voice, fullscreen). Format buttons light up for the selection. It is the left
  * half of the composer's bottom bar, next to the visibility menu and send.
  * Every editor action goes through `withEditor`, which no-ops while a
  * submission is pending.
  */
 export function ComposerToolbar({
+  activeFormats,
   isPending,
   voiceActive,
   captureAvailable,
@@ -93,6 +64,8 @@ export function ComposerToolbar({
   onStartVoice,
   onExpand,
 }: {
+  /** Formats active at the selection, mirrored on every transaction. */
+  activeFormats: ActiveFormats;
   isPending: boolean;
   voiceActive: boolean;
   captureAvailable: boolean;
@@ -109,8 +82,26 @@ export function ComposerToolbar({
   onExpand?: () => void;
 }) {
   const { t } = useI18n();
+  // Fade the trailing edge only while tools are actually cut off, so a wide
+  // composer never dims its last button.
+  const railRef = useRef<HTMLDivElement | null>(null);
+  const [hasMoreToRight, setHasMoreToRight] = useState(false);
+  useEffect(() => {
+    const rail = railRef.current;
+    if (!rail || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() =>
+      setHasMoreToRight(hasMoreToEnd(rail)),
+    );
+    observer.observe(rail);
+    return () => observer.disconnect();
+  }, []);
   return (
-    <div className="flex min-w-0 items-center gap-0.5 overflow-x-auto py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div
+      className="flex min-w-0 items-center gap-0.5 overflow-x-auto py-0.5 [scrollbar-width:none] data-[overflow=true]:[mask-image:linear-gradient(to_right,black_calc(100%-20px),transparent)] rtl:data-[overflow=true]:[mask-image:linear-gradient(to_left,black_calc(100%-20px),transparent)] [&::-webkit-scrollbar]:hidden"
+      data-overflow={hasMoreToRight ? "true" : undefined}
+      onScroll={(event) => setHasMoreToRight(hasMoreToEnd(event.currentTarget))}
+      ref={railRef}
+    >
       <ToolButton
         disabled={isPending}
         label={t("composer.addTag")}
@@ -151,7 +142,22 @@ export function ComposerToolbar({
           }}
         />
       </ToolButton>
-      <ToolDivider />
+      <ToolDivider className="hidden sm:block" />
+      {FORMAT_TOOLS.map(({ id, label, icon: Icon }) => (
+        <ToolButton
+          active={activeFormats[id]}
+          disabled={isPending}
+          key={id}
+          label={t(label)}
+          shortcut={FORMAT_SHORTCUTS[id]}
+          // Keep the editor's selection (and its bubble menu) while clicking.
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => withEditor((editor) => toggleFormat(editor, id))}
+        >
+          <Icon />
+        </ToolButton>
+      ))}
+      <ToolDivider className="hidden sm:block" />
       <ToolButton
         disabled={isPending}
         label={t("composer.bulletList")}
@@ -185,7 +191,7 @@ export function ComposerToolbar({
       >
         <ListTodoIcon />
       </ToolButton>
-      <ToolDivider />
+      <ToolDivider className="hidden sm:block" />
       <ToolButton
         disabled={isPending}
         label={t("composer.insertDate")}

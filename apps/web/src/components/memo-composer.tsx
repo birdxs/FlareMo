@@ -9,6 +9,12 @@ import {
 } from "@/components/composer/composer-suggestion-lists";
 import { ComposerToolbar } from "@/components/composer/composer-toolbar";
 import { ComposerVisibilityMenu } from "@/components/composer/composer-visibility-menu";
+import {
+  type ActiveFormats,
+  NO_ACTIVE_FORMATS,
+  readActiveFormats,
+  sameActiveFormats,
+} from "@/components/composer/format-actions";
 import { VoiceCaptureBar } from "@/components/composer/voice-capture-bar";
 import { RichComposerEditor } from "@/components/rich-composer-editor-lazy";
 import { useComposerSuggestions } from "@/hooks/use-composer-suggestions";
@@ -66,6 +72,15 @@ export function MemoComposer({
   const editorRef = useRef<Editor | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
+  // Toolbar highlight for the selection; only re-renders when a flag flips.
+  const [activeFormats, setActiveFormats] =
+    useState<ActiveFormats>(NO_ACTIVE_FORMATS);
+  const syncActiveFormats = (editor: Editor) => {
+    const next = readActiveFormats(editor);
+    setActiveFormats((current) =>
+      sameActiveFormats(current, next) ? current : next,
+    );
+  };
   const canSubmit = Boolean(draft.content.trim() || draft.files.length > 0);
   // Idle state shrinks to one line (flomo-style): unfocused and empty. Focus
   // or any content expands the editor back to full height.
@@ -196,6 +211,7 @@ export function MemoComposer({
           onTagTokenChange={tags ? setActiveTagToken : undefined}
           onWikiLinkTokenChange={setActiveWikiToken}
           onSuggestionKeyDown={handleSuggestionKeyDown}
+          onTransaction={syncActiveFormats}
           onSubmitRequest={() => {
             if (!isUploadingImages && !voiceActive) void submit();
           }}
@@ -237,6 +253,7 @@ export function MemoComposer({
       />
       <div className="flex h-11 items-center justify-between gap-2 rounded-b-xl border-t border-border/50 px-2.5 motion-safe:transition-colors group-data-[compact=true]:border-transparent">
         <ComposerToolbar
+          activeFormats={activeFormats}
           isPending={isPending}
           voiceActive={voiceActive}
           captureAvailable={captureAvailable}

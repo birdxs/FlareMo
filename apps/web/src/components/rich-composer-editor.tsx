@@ -6,6 +6,7 @@ import { Markdown } from "@tiptap/markdown";
 import { type Editor, EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useRef } from "react";
+import { FormatBubbleMenu } from "@/components/composer/format-bubble-menu";
 import { TagHighlight } from "@/components/tag-highlight-extension";
 import { UploadPlaceholder } from "@/components/upload-placeholder-extension";
 import { focusEditorOnNextFrame } from "@/lib/editor-autofocus";
@@ -89,6 +90,11 @@ export type RichComposerEditorProps = {
   contentClassName?: string;
   /** Emitted whenever the editor view undergoes a transaction/selection update. */
   onTransaction?: (editor: Editor) => void;
+  /**
+   * Floating format bar over a text selection. On by default for every
+   * surface; the markdown it writes is the same GFM the toolbar writes.
+   */
+  formatMenu?: boolean;
   /** Emitted when Backspace is pressed at the start of the document (pos 1). */
   onBackspaceAtStart?: () => boolean | undefined;
 };
@@ -119,6 +125,7 @@ export function RichComposerEditor({
   contentClassName = "composer-editor-content",
   onTransaction,
   onBackspaceAtStart,
+  formatMenu = true,
 }: RichComposerEditorProps) {
   // Callbacks are read through refs: TipTap captures the options object once,
   // so prop closures would go stale across renders.
@@ -305,5 +312,10 @@ export function RichComposerEditor({
 
   // The placeholder is captured at editor creation; a locale switch mid-session
   // is rare enough that the fresh wording lands on the next composer mount.
-  return <EditorContent editor={editor} />;
+  return (
+    <>
+      <EditorContent editor={editor} />
+      {editor && formatMenu && <FormatBubbleMenu editor={editor} />}
+    </>
+  );
 }
