@@ -93,8 +93,9 @@ export type RichComposerEditorProps = {
   /**
    * Floating format bar over a text selection. On by default for every
    * surface; the markdown it writes is the same GFM the toolbar writes.
+   * `"note"` shows the short-note set (bold, strike, link) only.
    */
-  formatMenu?: boolean;
+  formatMenu?: boolean | "note";
   /** Emitted when Backspace is pressed at the start of the document (pos 1). */
   onBackspaceAtStart?: () => boolean | undefined;
 };
@@ -315,7 +316,12 @@ export function RichComposerEditor({
   return (
     <>
       <EditorContent editor={editor} />
-      {editor && formatMenu && <FormatBubbleMenu editor={editor} />}
+      {editor && formatMenu && (
+        <FormatBubbleMenu
+          editor={editor}
+          variant={formatMenu === "note" ? "note" : "full"}
+        />
+      )}
     </>
   );
 }

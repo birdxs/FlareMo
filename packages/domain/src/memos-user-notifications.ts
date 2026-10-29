@@ -20,7 +20,8 @@ export type UserNotificationType =
   | "memo_comment"
   | "memo_mention"
   | "daily_review"
-  | "task_overdue";
+  | "task_overdue"
+  | "task_due";
 export type UserNotificationStatus = "unread" | "archived";
 
 export type UserNotificationDto = {
@@ -423,7 +424,10 @@ function notificationToDto(
 ): UserNotificationDto | undefined {
   const notification = row.notification;
   // Task-overdue rows carry a title snippet instead of a memo anchor.
-  if (notification.type === "task_overdue") {
+  if (
+    notification.type === "task_overdue" ||
+    notification.type === "task_due"
+  ) {
     return {
       name: `${notification.receiverId}/notifications/${notification.id}`,
       sender: row.sender.id,

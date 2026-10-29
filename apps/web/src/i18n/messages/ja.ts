@@ -1254,6 +1254,26 @@ const messages = {
   "review.writeTodayMemo": "今日の記録を書く",
   "review.writeFirstMemo": "最初の記録を書く",
   "common.scrollToTop": "トップに戻る",
+  "notifications.type.taskDue": "今日が期限",
+  "composer.schedule": "ToDo として予定",
+  "composer.schedule.when": "いつ通知するか",
+  "composer.schedule.today": "今日",
+  "composer.schedule.tomorrow": "明日",
+  "composer.schedule.nextMonday": "来週の月曜",
+  "composer.schedule.pickDate": "日付を選ぶ…",
+  "composer.schedule.project": "プロジェクトに入れる",
+  "composer.schedule.noProject": "プロジェクトなし",
+  "composer.schedule.clear": "予定を外す",
+  "composer.schedule.hint":
+    "送信すると、未完了の ToDo がそれぞれタスクになります。ToDo がなければメモ全体が 1 つのタスクになります。当日に通知します。",
+  "composer.schedule.taskCount": "ToDo {count} 件",
+  "composer.schedule.noTasks": "未完了の ToDo はありません",
+  "composer.longform": "長文を書く",
+  "toast.scheduledTasks": "保存し、ToDo を {count} 件追加しました",
+  "toast.scheduleFailed":
+    "メモは保存しましたが、ToDo は作成できませんでした。カードから個別にタスク化してください",
+  "toast.tooManyMemoImages":
+    "メモに添付できる画像は 9 枚までです。それ以上は記事にしてください",
 } as const satisfies Record<TranslationKey, string>;
 
 export const ja = messages;

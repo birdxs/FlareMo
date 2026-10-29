@@ -891,6 +891,30 @@ svg.lucide[stroke-width="2"] {
     @apply my-3 list-none ps-1;
   }
 
+  /* A note's lists sit in the text flow with the same rhythm as paragraphs
+     (articles keep their airier block spacing). */
+  .composer-editor-content ul,
+  .composer-editor-content ol,
+  .composer-editor-content ul[data-type="taskList"] {
+    @apply my-1;
+  }
+
+  /* The first block starts on the first line. The container scrolls, so a
+     child's top margin never collapses into its padding: without this,
+     turning an empty note into a list dropped the caret 12px below where the
+     placeholder stood. The task-list selector repeats to outrank its rule. */
+  .composer-editor-content > :first-child,
+  .composer-editor-content > ul[data-type="taskList"]:first-child,
+  .article-editor-content > :first-child,
+  .article-editor-content > ul[data-type="taskList"]:first-child {
+    @apply mt-0;
+  }
+
+  .composer-editor-content > :last-child,
+  .composer-editor-content > ul[data-type="taskList"]:last-child {
+    @apply mb-0;
+  }
+
   .composer-editor-content ul[data-type="taskList"] li,
   .article-editor-content ul[data-type="taskList"] li {
     @apply flex items-start gap-2;

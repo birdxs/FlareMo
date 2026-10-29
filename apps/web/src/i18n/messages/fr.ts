@@ -1284,6 +1284,26 @@ const messages = {
   "review.writeTodayMemo": "Écrire la note du jour",
   "review.writeFirstMemo": "Écrire votre première note",
   "common.scrollToTop": "Retour en haut",
+  "notifications.type.taskDue": "À faire aujourd'hui",
+  "composer.schedule": "Planifier en tâches",
+  "composer.schedule.when": "Me le rappeler le",
+  "composer.schedule.today": "Aujourd'hui",
+  "composer.schedule.tomorrow": "Demain",
+  "composer.schedule.nextMonday": "Lundi prochain",
+  "composer.schedule.pickDate": "Choisir une date…",
+  "composer.schedule.project": "Ajouter au projet",
+  "composer.schedule.noProject": "Aucun projet",
+  "composer.schedule.clear": "Retirer la planification",
+  "composer.schedule.hint":
+    "À l'envoi, chaque case non cochée devient une tâche ; une note sans case devient une seule tâche. Rappel le jour même.",
+  "composer.schedule.taskCount": "{count} tâche(s)",
+  "composer.schedule.noTasks": "Aucune tâche ouverte",
+  "composer.longform": "Écrire un article",
+  "toast.scheduledTasks": "Enregistré, {count} tâche(s) planifiée(s)",
+  "toast.scheduleFailed":
+    "Note enregistrée, mais les tâches n'ont pas été créées. Convertissez-les depuis la carte.",
+  "toast.tooManyMemoImages":
+    "Une note contient au plus 9 images. Pour davantage, écrivez un article.",
 } as const satisfies Record<TranslationKey, string>;
 
 export const fr = messages;

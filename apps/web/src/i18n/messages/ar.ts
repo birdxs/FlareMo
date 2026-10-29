@@ -1221,6 +1221,25 @@ const messages = {
   "review.writeTodayMemo": "كتابة ملاحظة اليوم",
   "review.writeFirstMemo": "كتابة أول ملاحظة",
   "common.scrollToTop": "العودة إلى الأعلى",
+  "notifications.type.taskDue": "مستحقة اليوم",
+  "composer.schedule": "جدولة كمهام",
+  "composer.schedule.when": "ذكّرني يوم",
+  "composer.schedule.today": "اليوم",
+  "composer.schedule.tomorrow": "غدًا",
+  "composer.schedule.nextMonday": "الاثنين القادم",
+  "composer.schedule.pickDate": "اختر تاريخًا…",
+  "composer.schedule.project": "أضف إلى مشروع",
+  "composer.schedule.noProject": "بلا مشروع",
+  "composer.schedule.clear": "إزالة الجدولة",
+  "composer.schedule.hint":
+    "عند الإرسال تصبح كل مهمة غير مُنجزة مهمةً مستقلة؛ والملاحظة بلا مهام تصبح مهمة واحدة. نذكّرك في يومها.",
+  "composer.schedule.taskCount": "{count} مهمة",
+  "composer.schedule.noTasks": "لا توجد مهام مفتوحة",
+  "composer.longform": "اكتب مقالًا",
+  "toast.scheduledTasks": "حُفظت، وجُدولت {count} مهمة",
+  "toast.scheduleFailed": "حُفظت الملاحظة لكن لم تُنشأ مهامها. حوّلها من البطاقة.",
+  "toast.tooManyMemoImages":
+    "تتسع الملاحظة لـ 9 صور على الأكثر. اكتب مقالًا لأكثر من ذلك.",
 } as const satisfies Record<TranslationKey, string>;
 
 export const ar = messages;

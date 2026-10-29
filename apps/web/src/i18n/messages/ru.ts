@@ -1263,6 +1263,26 @@ const messages = {
   "review.writeTodayMemo": "Записать заметку за сегодня",
   "review.writeFirstMemo": "Создать первую заметку",
   "common.scrollToTop": "Наверх",
+  "notifications.type.taskDue": "Срок сегодня",
+  "composer.schedule": "Запланировать задачи",
+  "composer.schedule.when": "Напомнить",
+  "composer.schedule.today": "Сегодня",
+  "composer.schedule.tomorrow": "Завтра",
+  "composer.schedule.nextMonday": "В следующий понедельник",
+  "composer.schedule.pickDate": "Выбрать дату…",
+  "composer.schedule.project": "Добавить в проект",
+  "composer.schedule.noProject": "Без проекта",
+  "composer.schedule.clear": "Снять план",
+  "composer.schedule.hint":
+    "При отправке каждый открытый пункт станет задачей; заметка без пунктов станет одной задачей. Напомним в этот день.",
+  "composer.schedule.taskCount": "Задач: {count}",
+  "composer.schedule.noTasks": "Нет открытых пунктов",
+  "composer.longform": "Написать статью",
+  "toast.scheduledTasks": "Сохранено, задач запланировано: {count}",
+  "toast.scheduleFailed":
+    "Заметка сохранена, но задачи не созданы. Преобразуйте их из карточки.",
+  "toast.tooManyMemoImages":
+    "В заметке не больше 9 изображений. Для большего напишите статью.",
 } as const satisfies Record<TranslationKey, string>;
 
 export const ru = messages;

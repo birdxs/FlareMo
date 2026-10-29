@@ -5,6 +5,7 @@ import {
   asc,
   desc,
   eq,
+  gte,
   inArray,
   isNull,
   lt,
@@ -17,6 +18,7 @@ import { ValidationError } from "./errors";
 import { parseResourceName } from "./ids";
 import { getMemoById } from "./memos";
 import { insertMemoNotification } from "./memos-user";
+import { nextDayKey } from "./tasks";
 
 export type WalkVia =
   | { type: "tag"; tag: string }
@@ -455,5 +457,43 @@ export async function createOverdueTaskNotifications(
     );
   }
   // Up to 500 overdue tasks used to cost 500 serial round trips per cron run.
+  return countNotificationInserts(db, statements);
+}
+
+/**
+ * File one "due today" inbox row per unfinished task due on `date`. This is
+ * the reminder a dated to-do promises: day-level, delivered with the daily
+ * sweep, never a clock-time alarm. The source event id
+ * (`task-due:<taskId>:<dueDate>`) keeps cron retries idempotent.
+ */
+export async function createDueTodayTaskNotifications(
+  db: FlareMoDb,
+  input: { date: string },
+): Promise<number> {
+  const date = input.date.trim();
+  if (!DAILY_REVIEW_DATE_PATTERN.test(date) || Number.isNaN(Date.parse(date))) {
+    throw new ValidationError("Invalid review date");
+  }
+  const due = await db
+    .select({ id: tasks.id, userId: tasks.userId, title: tasks.title })
+    .from(tasks)
+    .where(
+      and(
+        isNull(tasks.deletedAt),
+        gte(tasks.dueAt, date),
+        lt(tasks.dueAt, nextDayKey(date)),
+        inArray(tasks.status, ["todo", "in_progress"]),
+      ),
+    )
+    .limit(500);
+  const statements: unknown[] = due.map((task) =>
+    insertMemoNotification(db, {
+      receiverId: task.userId,
+      senderId: task.userId,
+      type: "task_due",
+      sourceEventId: `task-due:${task.id}:${date}`,
+      snippet: task.title,
+    }),
+  );
   return countNotificationInserts(db, statements);
 }

@@ -1,8 +1,10 @@
 import type { Editor } from "@tiptap/react";
 import { Suspense, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import type { MemoVisibility } from "@/api";
 import { ComposerFileChips } from "@/components/composer/composer-file-chips";
 import { ComposerFocusCanvas } from "@/components/composer/composer-focus-canvas-lazy";
+import { ComposerScheduleChip } from "@/components/composer/composer-schedule-menu";
 import {
   ComposerTagSuggestions,
   ComposerWikiSuggestions,
@@ -23,6 +25,8 @@ import { useInlineImageUploads } from "@/hooks/use-inline-image-uploads";
 import { useI18n } from "@/i18n";
 import type { MemoCaptureInput } from "@/lib/local-memo-capture";
 import { extractTags } from "@/lib/memo";
+import { scheduledTaskTitles } from "@/lib/memo-schedule";
+import { countMemoImages, MAX_MEMO_IMAGES } from "@/lib/memo-submission";
 import type { TagSuggestion } from "@/lib/tag-autocomplete";
 
 type MemoComposerProps = {
@@ -212,6 +216,7 @@ export function MemoComposer({
           onWikiLinkTokenChange={setActiveWikiToken}
           onSuggestionKeyDown={handleSuggestionKeyDown}
           onTransaction={syncActiveFormats}
+          formatMenu="note"
           onSubmitRequest={() => {
             if (!isUploadingImages && !voiceActive) void submit();
           }}
@@ -251,6 +256,14 @@ export function MemoComposer({
           })
         }
       />
+      {draft.schedule && (
+        <ComposerScheduleChip
+          disabled={isPending}
+          schedule={draft.schedule}
+          taskCount={scheduledTaskTitles(draft.content).length}
+          onClear={() => commitDraft({ schedule: undefined })}
+        />
+      )}
       <div className="flex h-11 items-center justify-between gap-2 rounded-b-xl border-t border-border/50 px-2.5 motion-safe:transition-colors group-data-[compact=true]:border-transparent">
         <ComposerToolbar
           activeFormats={activeFormats}
@@ -258,9 +271,23 @@ export function MemoComposer({
           voiceActive={voiceActive}
           captureAvailable={captureAvailable}
           withEditor={withEditor}
-          onAddFiles={(files) =>
-            commitDraft({ files: [...draftRef.current.files, ...files] })
-          }
+          onAddFiles={(files) => {
+            // A note holds nine images at most; extra picks are dropped
+            // with a pointer to articles rather than failing at send time.
+            let room = MAX_MEMO_IMAGES - countMemoImages(draftRef.current);
+            const accepted = files.filter((file) => {
+              if (!file.type.startsWith("image/")) return true;
+              room -= 1;
+              return room >= 0;
+            });
+            if (accepted.length < files.length) {
+              toast.error(t("toast.tooManyMemoImages"));
+            }
+            if (accepted.length === 0) return;
+            commitDraft({ files: [...draftRef.current.files, ...accepted] });
+          }}
+          schedule={draft.schedule}
+          onScheduleChange={(schedule) => commitDraft({ schedule })}
           onStartVoice={() => void captureController.start()}
           onExpand={
             onSubmitArticle ? () => setIsFullscreenOpen(true) : undefined

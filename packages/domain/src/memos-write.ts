@@ -10,6 +10,7 @@ import {
   adjustmentForNewMemo,
   hourlyCountStatements,
 } from "./memo-hourly-counts";
+import { syncTasksFromMemoLines } from "./memo-task-sync";
 import {
   assertMemoContentSize,
   hasUncheckedTaskList,
@@ -443,6 +444,18 @@ export async function updateMemo(
   }
 
   void pruneMemoRevisions(db, id).catch(() => undefined);
+
+  // Ticking a to-do line in the memo moves the task scheduled from it. The
+  // memo write already landed; a failed follow-up leaves the task as it was.
+  if (input.content !== undefined && input.content !== existing.content) {
+    await syncTasksFromMemoLines(db, {
+      userId: existing.userId,
+      memoId: existing.id,
+      previousContent: existing.content,
+      nextContent: input.content,
+      now,
+    }).catch(() => undefined);
+  }
 
   return getMemoById(db, user, id, { includeDeleted: true });
 }

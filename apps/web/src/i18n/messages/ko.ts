@@ -1245,6 +1245,26 @@ const messages = {
   "review.writeTodayMemo": "오늘의 기록 작성",
   "review.writeFirstMemo": "첫 번째 기록 작성",
   "common.scrollToTop": "맨 위로 이동",
+  "notifications.type.taskDue": "오늘 마감",
+  "composer.schedule": "할 일로 일정 잡기",
+  "composer.schedule.when": "언제 알릴까요",
+  "composer.schedule.today": "오늘",
+  "composer.schedule.tomorrow": "내일",
+  "composer.schedule.nextMonday": "다음 주 월요일",
+  "composer.schedule.pickDate": "날짜 선택…",
+  "composer.schedule.project": "프로젝트에 넣기",
+  "composer.schedule.noProject": "프로젝트 없음",
+  "composer.schedule.clear": "일정 해제",
+  "composer.schedule.hint":
+    "보내면 완료되지 않은 할 일이 각각 작업이 됩니다. 할 일이 없으면 메모 전체가 작업 하나가 됩니다. 마감일에 알려 드립니다.",
+  "composer.schedule.taskCount": "할 일 {count}개",
+  "composer.schedule.noTasks": "남은 할 일이 없습니다",
+  "composer.longform": "긴 글 쓰기",
+  "toast.scheduledTasks": "저장했고 할 일 {count}개를 추가했습니다",
+  "toast.scheduleFailed":
+    "메모는 저장했지만 할 일은 만들지 못했습니다. 카드에서 하나씩 작업으로 바꿔 주세요",
+  "toast.tooManyMemoImages":
+    "메모에는 이미지를 9장까지 넣을 수 있습니다. 더 많으면 글로 작성하세요",
 } as const satisfies Record<TranslationKey, string>;
 
 export const ko = messages;

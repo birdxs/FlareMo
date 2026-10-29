@@ -64,8 +64,11 @@ export function ComposerFocusCanvas({
   const canvasEditorRef = useRef<Editor | null>(null);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const editorBoxRef = useRef<HTMLDivElement | null>(null);
+  // The canvas is opened by "write long-form", so it starts as an article.
+  // The type menu still sends the text as a note for an author who only
+  // wanted the room.
   const [manualType, setManualType] = useState<ComposerPublishType | null>(
-    null,
+    "article",
   );
   const [activeFormats, setActiveFormats] = useState<CanvasActiveFormats>({
     h2: false,

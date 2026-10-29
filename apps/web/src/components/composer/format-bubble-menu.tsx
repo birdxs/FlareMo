@@ -48,6 +48,9 @@ const BLOCK_TOOLS: {
   { id: "quote", label: "article.toolQuote", icon: QuoteIcon },
 ];
 
+/** A note keeps to bold and strike; the rest of the marks belong to articles. */
+const NOTE_INLINE_TOOLS = new Set<FormatId>(["bold", "strike"]);
+
 /** Buttons must not take focus: the editor selection is what they act on. */
 const keepSelection = (event: MouseEvent) => event.preventDefault();
 
@@ -59,7 +62,21 @@ const keepSelection = (event: MouseEvent) => event.preventDefault();
  * read-only. On touch screens it sits under the selection so it does not
  * collide with the native copy/paste callout.
  */
-export function FormatBubbleMenu({ editor }: { editor: Editor }) {
+export function FormatBubbleMenu({
+  editor,
+  variant = "full",
+}: {
+  editor: Editor;
+  /**
+   * `note` is the short-note composer's reduced set: bold, strike, link.
+   * Headings, quotes and code are article tools.
+   */
+  variant?: "full" | "note";
+}) {
+  const isNote = variant === "note";
+  const inlineTools = isNote
+    ? INLINE_TOOLS.filter((tool) => NOTE_INLINE_TOOLS.has(tool.id))
+    : INLINE_TOOLS;
   const { t } = useI18n();
   const [mode, setMode] = useState<Mode>("format");
   const [href, setHref] = useState("");
@@ -94,21 +111,40 @@ export function FormatBubbleMenu({ editor }: { editor: Editor }) {
 
   // The plugin only listens to window scroll; editors that scroll inside
   // their own box (the composer caps its height) need a nudge to follow.
+  // Tiptap throws on `editor.view.dom` while the view is not mounted (first
+  // paint, a reload's remount, or after destroy), so the listener attaches
+  // once the view exists and detaches from the element it attached to.
   useEffect(() => {
     let frame = 0;
+    let dom: HTMLElement | null = null;
     const onScroll = () => {
       if (frame) return;
       frame = window.requestAnimationFrame(() => {
         frame = 0;
         if (editor.isDestroyed) return;
-        editor.view.dispatch(
-          editor.state.tr.setMeta("formatBubbleMenu", "updatePosition"),
-        );
+        try {
+          editor.view.dispatch(
+            editor.state.tr.setMeta("formatBubbleMenu", "updatePosition"),
+          );
+        } catch {
+          // The view went away between the scroll and this frame.
+        }
       });
     };
-    editor.view.dom.addEventListener("scroll", onScroll, { passive: true });
+    const attach = () => {
+      if (dom || editor.isDestroyed) return;
+      try {
+        dom = editor.view.dom;
+      } catch {
+        return;
+      }
+      dom.addEventListener("scroll", onScroll, { passive: true });
+    };
+    attach();
+    editor.on("mount", attach);
     return () => {
-      editor.view.dom.removeEventListener("scroll", onScroll);
+      editor.off("mount", attach);
+      dom?.removeEventListener("scroll", onScroll);
       if (frame) window.cancelAnimationFrame(frame);
     };
   }, [editor]);
@@ -288,7 +324,7 @@ export function FormatBubbleMenu({ editor }: { editor: Editor }) {
           </>
         ) : (
           <>
-            {INLINE_TOOLS.map(({ id, label, icon: Icon }) => (
+            {inlineTools.map(({ id, label, icon: Icon }) => (
               <ToolButton
                 active={formats[id]}
                 key={id}
@@ -308,19 +344,20 @@ export function FormatBubbleMenu({ editor }: { editor: Editor }) {
             >
               <Link2Icon />
             </ToolButton>
-            <ToolDivider />
-            {BLOCK_TOOLS.map(({ id, label, icon: Icon }) => (
-              <ToolButton
-                active={formats[id]}
-                key={id}
-                label={t(label)}
-                shortcut={FORMAT_SHORTCUTS[id]}
-                onClick={() => toggleFormat(editor, id)}
-                onMouseDown={keepSelection}
-              >
-                <Icon />
-              </ToolButton>
-            ))}
+            {!isNote && <ToolDivider />}
+            {!isNote &&
+              BLOCK_TOOLS.map(({ id, label, icon: Icon }) => (
+                <ToolButton
+                  active={formats[id]}
+                  key={id}
+                  label={t(label)}
+                  shortcut={FORMAT_SHORTCUTS[id]}
+                  onClick={() => toggleFormat(editor, id)}
+                  onMouseDown={keepSelection}
+                >
+                  <Icon />
+                </ToolButton>
+              ))}
           </>
         )}
       </div>

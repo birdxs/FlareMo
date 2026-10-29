@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
   AtSignIcon,
+  CalendarCheckIcon,
   CalendarClockIcon,
   ListTodoIcon,
   MessageCircleIcon,
@@ -23,6 +24,7 @@ const TYPE_ICONS = {
   memo_comment: MessageCircleIcon,
   memo_mention: AtSignIcon,
   task_overdue: ListTodoIcon,
+  task_due: CalendarCheckIcon,
 } as const;
 
 const TYPE_LABELS = {
@@ -30,6 +32,7 @@ const TYPE_LABELS = {
   memo_comment: "notifications.type.memoComment",
   memo_mention: "notifications.type.memoMention",
   task_overdue: "notifications.type.taskOverdue",
+  task_due: "notifications.type.taskDue",
 } as const;
 
 // One shared query for every surface that shows unread state: the user-menu
@@ -65,7 +68,10 @@ export function useNotifications() {
       void navigate({ to: "/review/daily" });
       return;
     }
-    if (notification.type === "task_overdue") {
+    if (
+      notification.type === "task_overdue" ||
+      notification.type === "task_due"
+    ) {
       void navigate({ to: "/projects" });
       return;
     }

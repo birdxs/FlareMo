@@ -1269,6 +1269,26 @@ const messages = {
   "review.writeTodayMemo": "Escribir la nota de hoy",
   "review.writeFirstMemo": "Escribir la primera nota",
   "common.scrollToTop": "Volver arriba",
+  "notifications.type.taskDue": "Vence hoy",
+  "composer.schedule": "Programar como tareas",
+  "composer.schedule.when": "Recordarme el",
+  "composer.schedule.today": "Hoy",
+  "composer.schedule.tomorrow": "Mañana",
+  "composer.schedule.nextMonday": "El próximo lunes",
+  "composer.schedule.pickDate": "Elegir fecha…",
+  "composer.schedule.project": "Añadir al proyecto",
+  "composer.schedule.noProject": "Sin proyecto",
+  "composer.schedule.clear": "Quitar programación",
+  "composer.schedule.hint":
+    "Al enviar, cada pendiente sin marcar se convierte en una tarea; una nota sin pendientes se convierte en una sola tarea. Te avisamos ese día.",
+  "composer.schedule.taskCount": "{count} pendiente(s)",
+  "composer.schedule.noTasks": "No hay pendientes abiertos",
+  "composer.longform": "Escribir artículo",
+  "toast.scheduledTasks": "Guardado, con {count} pendiente(s) programado(s)",
+  "toast.scheduleFailed":
+    "Nota guardada, pero sus pendientes no se programaron. Conviértelos desde la tarjeta.",
+  "toast.tooManyMemoImages":
+    "Una nota admite hasta 9 imágenes. Para más, escribe un artículo.",
 } as const satisfies Record<TranslationKey, string>;
 
 export const es = messages;

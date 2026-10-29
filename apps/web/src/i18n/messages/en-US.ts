@@ -1243,6 +1243,26 @@ const messages = {
   "review.writeTodayMemo": "Write today's note",
   "review.writeFirstMemo": "Write your first note",
   "common.scrollToTop": "Scroll to top",
+  "notifications.type.taskDue": "Due today",
+  "composer.schedule": "Schedule as to-do",
+  "composer.schedule.when": "Remind me on",
+  "composer.schedule.today": "Today",
+  "composer.schedule.tomorrow": "Tomorrow",
+  "composer.schedule.nextMonday": "Next Monday",
+  "composer.schedule.pickDate": "Pick a date…",
+  "composer.schedule.project": "Add to project",
+  "composer.schedule.noProject": "No project",
+  "composer.schedule.clear": "Remove schedule",
+  "composer.schedule.hint":
+    "On send, each open to-do becomes a task; a note without to-dos becomes one task. You get a reminder on the day.",
+  "composer.schedule.taskCount": "{count} to-do(s)",
+  "composer.schedule.noTasks": "No open to-dos",
+  "composer.longform": "Write long-form",
+  "toast.scheduledTasks": "Saved, with {count} to-do(s) scheduled",
+  "toast.scheduleFailed":
+    "Note saved, but its to-dos were not scheduled. Convert them from the card instead.",
+  "toast.tooManyMemoImages":
+    "A note holds up to 9 images. Write an article for more.",
 } as const;
 
 export const enUS = messages satisfies Record<TranslationKey, string>;

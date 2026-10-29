@@ -115,7 +115,10 @@ function DropdownMenuCheckboxItem({
         className="pointer-events-none absolute right-2 flex items-center justify-center"
         data-slot="dropdown-menu-checkbox-item-indicator"
       >
-        <DropdownMenuPrimitive.CheckboxItemIndicator keepMounted>
+        <DropdownMenuPrimitive.CheckboxItemIndicator
+          keepMounted
+          className="data-unchecked:hidden"
+        >
           <CheckIcon />
         </DropdownMenuPrimitive.CheckboxItemIndicator>
       </span>
@@ -157,7 +160,10 @@ function DropdownMenuRadioItem({
         className="pointer-events-none absolute right-2 flex items-center justify-center"
         data-slot="dropdown-menu-radio-item-indicator"
       >
-        <DropdownMenuPrimitive.RadioItemIndicator keepMounted>
+        <DropdownMenuPrimitive.RadioItemIndicator
+          keepMounted
+          className="data-unchecked:hidden"
+        >
           <CheckIcon />
         </DropdownMenuPrimitive.RadioItemIndicator>
       </span>

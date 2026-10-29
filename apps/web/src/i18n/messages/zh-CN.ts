@@ -1167,6 +1167,24 @@ const messages = {
   "review.writeTodayMemo": "写下今日记录",
   "review.writeFirstMemo": "写下第一条记录",
   "common.scrollToTop": "回到顶部",
+  "notifications.type.taskDue": "今日到期",
+  "composer.schedule": "安排为待办",
+  "composer.schedule.when": "哪天提醒你",
+  "composer.schedule.today": "今天",
+  "composer.schedule.tomorrow": "明天",
+  "composer.schedule.nextMonday": "下周一",
+  "composer.schedule.pickDate": "选择日期…",
+  "composer.schedule.project": "放进项目",
+  "composer.schedule.noProject": "不放进项目",
+  "composer.schedule.clear": "取消安排",
+  "composer.schedule.hint":
+    "发送后，每条未勾选的待办成为一项任务；没有待办行时，整条便签成为一项任务。到期当天提醒你。",
+  "composer.schedule.taskCount": "{count} 项待办",
+  "composer.schedule.noTasks": "没有未完成的待办",
+  "composer.longform": "写长文",
+  "toast.scheduledTasks": "已记下，加入 {count} 项待办",
+  "toast.scheduleFailed": "便签已记下，但待办没有建成；可在卡片上逐条转为任务",
+  "toast.tooManyMemoImages": "一条便签最多 9 张图片，更多图片请写成长文",
 } as const;
 
 export const zhCN = messages;

@@ -588,6 +588,7 @@ export const appNotificationDtoSchema = z.object({
     "memo_mention",
     "daily_review",
     "task_overdue",
+    "task_due",
   ]),
   status: z.enum(["unread", "archived"]),
   // Task-overdue rows have no memo anchor; memo_snippet carries the title.

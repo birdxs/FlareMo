@@ -1,21 +1,17 @@
 import type { Editor } from "@tiptap/react";
 import {
   BoldIcon,
-  CalendarPlusIcon,
+  FilePenLineIcon,
   HashIcon,
-  Heading2Icon,
   ImagePlusIcon,
-  ItalicIcon,
   ListIcon,
   ListOrderedIcon,
   ListTodoIcon,
-  Maximize2Icon,
   MicIcon,
-  QuoteIcon,
-  SquareCodeIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { loadComposerFocusCanvas } from "@/components/composer/composer-focus-canvas-lazy";
+import { ComposerScheduleMenu } from "@/components/composer/composer-schedule-menu";
 import {
   type ActiveFormats,
   FORMAT_SHORTCUTS,
@@ -23,8 +19,8 @@ import {
 } from "@/components/composer/format-actions";
 import { ToolButton, ToolDivider } from "@/components/composer/tool-button";
 import { Input } from "@/components/ui/input";
-import { type TranslationKey, useI18n } from "@/i18n";
-import { todayKey } from "@/lib/calendar-date";
+import { useI18n } from "@/i18n";
+import type { MemoSchedule } from "@/lib/memo-schedule";
 
 /** True while tools are cut off past the rail's trailing edge. RTL reports
  * scrollLeft from 0 down to negative, so measure the distance. */
@@ -32,27 +28,14 @@ function hasMoreToEnd(rail: HTMLElement) {
   return Math.abs(rail.scrollLeft) + rail.clientWidth < rail.scrollWidth - 1;
 }
 
-/** Block and inline formats the composer exposes as buttons. Italic, strike
- * and inline code live in the selection bubble only, to keep the rail short. */
-const FORMAT_TOOLS: {
-  id: "heading" | "bold" | "italic" | "quote" | "codeBlock";
-  label: TranslationKey;
-  icon: typeof BoldIcon;
-}[] = [
-  { id: "heading", label: "composer.heading", icon: Heading2Icon },
-  { id: "bold", label: "article.toolBold", icon: BoldIcon },
-  { id: "italic", label: "article.toolItalic", icon: ItalicIcon },
-  { id: "quote", label: "article.toolQuote", icon: QuoteIcon },
-  { id: "codeBlock", label: "composer.codeBlock", icon: SquareCodeIcon },
-];
-
 /**
- * Formatting rail of the composer, in four groups: insert (tag, image),
- * format (heading, bold, italic, quote, code block), lists, and capture
- * (date, voice, fullscreen). Format buttons light up for the selection. It is the left
- * half of the composer's bottom bar, next to the visibility menu and send.
- * Every editor action goes through `withEditor`, which no-ops while a
- * submission is pending.
+ * The short-note rail. A note is plain prose with a little structure, so the
+ * rail stops at bold and lists: headings, quotes and code blocks are article
+ * tools, one click away behind "write long-form". Groups: insert (tag,
+ * image), shape (bold, bullets, numbers, to-dos), and plan (schedule, voice),
+ * then the way into the article canvas. It is the left half of the bottom
+ * bar, next to the visibility menu and send. Every editor action goes
+ * through `withEditor`, which no-ops while a submission is pending.
  */
 export function ComposerToolbar({
   activeFormats,
@@ -63,6 +46,8 @@ export function ComposerToolbar({
   onAddFiles,
   onStartVoice,
   onExpand,
+  schedule,
+  onScheduleChange,
 }: {
   /** Formats active at the selection, mirrored on every transaction. */
   activeFormats: ActiveFormats;
@@ -78,8 +63,11 @@ export function ComposerToolbar({
   onAddFiles: (files: File[]) => void;
   /** Starts a session; the caller owns the controller. */
   onStartVoice: () => void;
-  /** Opens fullscreen focus canvas. */
+  /** Opens the long-form (article) canvas. */
   onExpand?: () => void;
+  /** The draft's reminder day / project; see `MemoSchedule`. */
+  schedule?: MemoSchedule;
+  onScheduleChange: (schedule: MemoSchedule | undefined) => void;
 }) {
   const { t } = useI18n();
   // Fade the trailing edge only while tools are actually cut off, so a wide
@@ -143,21 +131,17 @@ export function ComposerToolbar({
         />
       </ToolButton>
       <ToolDivider className="hidden sm:block" />
-      {FORMAT_TOOLS.map(({ id, label, icon: Icon }) => (
-        <ToolButton
-          active={activeFormats[id]}
-          disabled={isPending}
-          key={id}
-          label={t(label)}
-          shortcut={FORMAT_SHORTCUTS[id]}
-          // Keep the editor's selection (and its bubble menu) while clicking.
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => withEditor((editor) => toggleFormat(editor, id))}
-        >
-          <Icon />
-        </ToolButton>
-      ))}
-      <ToolDivider className="hidden sm:block" />
+      <ToolButton
+        active={activeFormats.bold}
+        disabled={isPending}
+        label={t("article.toolBold")}
+        shortcut={FORMAT_SHORTCUTS.bold}
+        // Keep the editor's selection (and its bubble menu) while clicking.
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => withEditor((editor) => toggleFormat(editor, "bold"))}
+      >
+        <BoldIcon />
+      </ToolButton>
       <ToolButton
         disabled={isPending}
         label={t("composer.bulletList")}
@@ -192,18 +176,11 @@ export function ComposerToolbar({
         <ListTodoIcon />
       </ToolButton>
       <ToolDivider className="hidden sm:block" />
-      <ToolButton
+      <ComposerScheduleMenu
         disabled={isPending}
-        label={t("composer.insertDate")}
-        onClick={() =>
-          withEditor((editor) => {
-            const today = todayKey();
-            editor.chain().focus().insertContent(`${today} `).run();
-          })
-        }
-      >
-        <CalendarPlusIcon />
-      </ToolButton>
+        schedule={schedule}
+        onScheduleChange={onScheduleChange}
+      />
       {captureAvailable && (
         <ToolButton
           active={voiceActive}
@@ -218,16 +195,19 @@ export function ComposerToolbar({
         </ToolButton>
       )}
       {onExpand && (
-        <ToolButton
-          disabled={isPending}
-          label={t("composer.fullscreen.open")}
-          onClick={onExpand}
-          onMouseEnter={() => {
-            void loadComposerFocusCanvas();
-          }}
-        >
-          <Maximize2Icon />
-        </ToolButton>
+        <>
+          <ToolDivider className="hidden sm:block" />
+          <ToolButton
+            disabled={isPending}
+            label={t("composer.longform")}
+            onClick={onExpand}
+            onMouseEnter={() => {
+              void loadComposerFocusCanvas();
+            }}
+          >
+            <FilePenLineIcon />
+          </ToolButton>
+        </>
       )}
     </div>
   );

@@ -73,6 +73,7 @@ export async function listTasks(
     priority?: Task["priority"];
     due_from?: string;
     due_to?: string;
+    source_memo_id?: string;
     include_deleted?: boolean;
     page_size?: number;
     page_token?: string;
@@ -84,6 +85,7 @@ export async function listTasks(
   if (params.priority) query.set("priority", params.priority);
   if (params.due_from) query.set("due_from", params.due_from);
   if (params.due_to) query.set("due_to", params.due_to);
+  if (params.source_memo_id) query.set("source_memo_id", params.source_memo_id);
   if (params.include_deleted) query.set("include_deleted", "true");
   if (params.page_size) query.set("page_size", String(params.page_size));
   if (params.page_token) query.set("page_token", params.page_token);
