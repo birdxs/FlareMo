@@ -212,7 +212,7 @@
 
     /* Near-neutral surfaces (KOSX paper/ink family) with a hint of warmth
        so the signal-orange accent never sits on cold gray. */
-    --background: oklch(0.982 0.003 75);
+    --background: oklch(0.983 0.0035 80);
     --foreground: oklch(0.24 0.006 75);
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.24 0.006 75);
@@ -223,7 +223,7 @@
     --secondary: oklch(0.955 0.004 75);
     --secondary-foreground: oklch(0.28 0.006 75);
     --muted: oklch(0.952 0.004 75);
-    --muted-foreground: oklch(0.52 0.008 75);
+    --muted-foreground: oklch(0.5 0.009 75);
     --accent: var(--brand-50);
     --accent-foreground: var(--brand-700);
     --destructive: oklch(0.577 0.245 27.325);
@@ -236,20 +236,24 @@
     --success-emphasis: oklch(0.45 0.11 155);
     --warning-emphasis: oklch(0.47 0.10 65);
     --info-emphasis: oklch(0.45 0.10 245);
-    --border: oklch(0.912 0.004 75);
-    --input: oklch(0.912 0.004 75);
+    --border: oklch(0.925 0.004 75);
+    --input: oklch(0.89 0.005 75);
     --ring: var(--brand-400);
-    --radius: 0.875rem;
-    --shadow-xs: 0 1px 2px oklch(0.30 0.02 60 / 0.05);
+    /* Ember 2: a tighter, more exact corner. Controls 10px, cards 14px,
+       dialogs 18px. The 0.875rem base read as soft and bubbly at h-8. */
+    --radius: 0.625rem;
+    /* Two-layer warm shadows: a tight contact shadow for edge definition plus
+       a soft ambient one for lift. Kept low so surfaces read as paper. */
+    --shadow-xs: 0 1px 2px oklch(0.30 0.02 60 / 0.045);
     --shadow-sm:
-        0 1px 3px oklch(0.30 0.02 60 / 0.07),
-        0 1px 2px -1px oklch(0.30 0.02 60 / 0.07);
+        0 1px 2px oklch(0.30 0.02 60 / 0.05),
+        0 2px 6px -2px oklch(0.30 0.02 60 / 0.06);
     --shadow-md:
-        0 4px 12px -2px oklch(0.30 0.02 60 / 0.09),
-        0 2px 4px -2px oklch(0.30 0.02 60 / 0.05);
+        0 1px 2px oklch(0.30 0.02 60 / 0.05),
+        0 6px 16px -6px oklch(0.30 0.02 60 / 0.10);
     --shadow-lg:
-        0 12px 32px -8px oklch(0.30 0.02 60 / 0.14),
-        0 4px 8px -4px oklch(0.30 0.02 60 / 0.06);
+        0 1px 3px oklch(0.30 0.02 60 / 0.06),
+        0 16px 40px -12px oklch(0.30 0.02 60 / 0.18);
 
     /* Liquid Glass material (docs/liquid-glass-design.md). Neutral by design:
        [data-accent] presets never tint the glass, so the accent matrix stays
@@ -291,7 +295,7 @@
     --warning-emphasis: oklch(0.85 0.10 80);
     --info-emphasis: oklch(0.82 0.09 240);
     --border: oklch(1 0 0 / 9%);
-    --input: oklch(1 0 0 / 14%);
+    --input: oklch(1 0 0 / 13%);
     --ring: var(--brand-400);
     /* 暗色不用阴影表达层级（表面明度阶梯 + 发丝线）；token 置近零以免散落各处
        的 shadow-* 类在暗色下投影（docs/design-system.md 形状与层级） */
@@ -662,7 +666,7 @@
   }
 
   .memo-markdown li::marker {
-    @apply text-brand-400;
+    @apply text-muted-foreground/70;
   }
 
   .memo-markdown a {
@@ -670,11 +674,11 @@
   }
 
   .memo-markdown blockquote {
-    @apply rounded-e-md border-s-2 border-brand-300 bg-brand-50 py-1 pe-3 ps-4 text-muted-foreground dark:border-brand-600 dark:bg-brand-400/5;
+    @apply border-s-2 border-primary/45 py-0.5 ps-4 text-muted-foreground;
   }
 
   .memo-markdown code {
-    @apply rounded-md bg-muted px-1.5 py-0.5 font-mono text-[0.85em];
+    @apply rounded-[5px] border border-border/60 bg-muted/70 px-1 py-px font-mono text-[0.85em];
   }
 
   .memo-markdown pre {
@@ -813,12 +817,12 @@
 
   .composer-editor-content blockquote,
   .article-editor-content blockquote {
-    @apply my-3 rounded-e-md border-s-2 border-brand-300 bg-brand-50 py-1 pe-3 ps-4 text-muted-foreground dark:border-brand-600 dark:bg-brand-400/5;
+    @apply my-3 border-s-2 border-primary/45 py-0.5 ps-4 text-muted-foreground;
   }
 
   .composer-editor-content code,
   .article-editor-content code {
-    @apply rounded-md bg-muted px-1.5 py-0.5 font-mono text-[0.85em];
+    @apply rounded-[5px] border border-border/60 bg-muted/70 px-1 py-px font-mono text-[0.85em];
   }
 
   .composer-editor-content pre,

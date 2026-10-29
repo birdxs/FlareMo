@@ -145,7 +145,7 @@ export function MemoComposer({
 
   return (
     <form
-      className="group relative flex w-full flex-col rounded-xl border border-border bg-card shadow-xs motion-safe:animate-rise motion-safe:transition-[border-color,box-shadow] motion-safe:duration-200 focus-within:border-brand-400/60 focus-within:shadow-md focus-within:ring-2 focus-within:ring-brand-400/25"
+      className="group relative flex w-full flex-col rounded-xl border border-border/80 bg-card shadow-xs motion-safe:animate-rise motion-safe:transition-[border-color,box-shadow] motion-safe:duration-200 focus-within:border-ring/60 focus-within:shadow-sm focus-within:ring-3 focus-within:ring-ring/15"
       data-compact={isCompact ? "true" : undefined}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) {

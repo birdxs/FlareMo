@@ -129,11 +129,13 @@ export const MemoCard = memo(function MemoCard({
     <article
       data-memo-id={memo.id}
       className={cn(
-        "group relative flex w-full flex-col gap-2 rounded-xl border border-border/50 bg-card/60 px-3.5 py-4 text-card-foreground [content-visibility:auto] [contain-intrinsic-size:auto_120px] motion-safe:animate-rise motion-safe:transition-[background-color,border-color,transform,box-shadow] motion-safe:duration-150 hover:border-border hover:bg-card hover:shadow-xs motion-safe:hover:-translate-y-px",
+        "group relative flex w-full flex-col gap-2 rounded-xl border border-border/60 bg-card px-4 py-3.5 text-card-foreground shadow-xs [content-visibility:auto] [contain-intrinsic-size:auto_120px] motion-safe:animate-rise motion-safe:transition-[border-color,box-shadow] motion-safe:duration-150 hover:border-border hover:shadow-sm sm:px-5 sm:py-4",
+        // Pinned: a slim inset ember bar (one of the four places the brand
+        // gradient is allowed), instead of a thick colored border.
         memo.pinned &&
-          "border-l-brand-500 border-l-[3px] dark:border-l-brand-400 bg-card",
-        isFocused && "ring-2 ring-brand-400/60 shadow-xs bg-card",
-        isEditing && "bg-card shadow-xs ring-1 ring-brand-400/40",
+          "before:pointer-events-none before:absolute before:inset-y-4 before:start-0 before:w-[3px] before:rounded-e-full before:bg-brand-gradient",
+        isFocused && "border-ring/60 ring-3 ring-ring/20",
+        isEditing && "border-ring/50 shadow-sm ring-3 ring-ring/15",
       )}
       style={{ animationDelay: `${Math.min(index, 7) * 35}ms` }}
     >

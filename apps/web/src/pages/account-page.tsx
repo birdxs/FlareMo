@@ -14,6 +14,7 @@ import {
   LogOutIcon,
   XIcon,
 } from "lucide-react";
+import { useRef } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,7 @@ export function AccountSettingsDialog({
     t,
     vectorUsageQuery,
   } = useAccountPageState({ open });
+  const popupRef = useRef<HTMLDivElement>(null);
 
   return (
     <Dialog
@@ -63,6 +65,11 @@ export function AccountSettingsDialog({
       }}
     >
       <DialogContent
+        // Pointer opens land on the panel itself, not the first row: focusing
+        // the profile card painted a focus ring on every open. Keyboard
+        // opens keep the default so tab order still starts inside.
+        initialFocus={(type) => (type === "keyboard" ? true : popupRef.current)}
+        ref={popupRef}
         showCloseButton={false}
         className="flex h-svh max-h-svh w-full max-w-none flex-col gap-0 overflow-hidden rounded-none border-0 p-0 sm:h-[min(46rem,calc(100svh-4rem))] sm:max-h-[calc(100svh-4rem)] sm:max-w-4xl sm:flex-row sm:rounded-2xl sm:border"
       >
@@ -127,12 +134,14 @@ export function AccountSettingsDialog({
                       : session.data?.user.email}
                   </div>
                   <div className="mt-1.5 flex items-center gap-1.5">
-                    <Badge
-                      variant="secondary"
-                      className="h-4 px-1.5 text-xs font-normal"
-                    >
-                      {roleLabel(meQuery.data?.role, t)}
-                    </Badge>
+                    {meQuery.data?.role && (
+                      <Badge
+                        variant="secondary"
+                        className="h-4 px-1.5 text-xs font-normal"
+                      >
+                        {roleLabel(meQuery.data?.role, t)}
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </div>
@@ -248,7 +257,9 @@ export function AccountSettingsDialog({
             onClick={() => setSection("account")}
             className={cn(
               "mb-2 flex w-full cursor-pointer items-center gap-3 rounded-xl p-2.5 text-start text-foreground transition-colors",
-              section === "account" ? "bg-accent" : "hover:bg-muted",
+              section === "account"
+                ? "bg-card shadow-xs ring-1 ring-border/70 dark:bg-muted"
+                : "hover:bg-muted/70",
             )}
           >
             <Avatar
@@ -268,12 +279,14 @@ export function AccountSettingsDialog({
                     session.data?.user.name ??
                     session.data?.user.username}
                 </p>
-                <Badge
-                  variant="secondary"
-                  className="h-4 px-1.5 text-xs font-normal"
-                >
-                  {roleLabel(meQuery.data?.role, t)}
-                </Badge>
+                {meQuery.data?.role && (
+                  <Badge
+                    variant="secondary"
+                    className="h-4 px-1.5 text-xs font-normal"
+                  >
+                    {roleLabel(meQuery.data?.role, t)}
+                  </Badge>
+                )}
               </div>
               <p className="truncate text-xs text-muted-foreground mt-0.5">
                 {session.data?.user.username
@@ -305,10 +318,10 @@ export function AccountSettingsDialog({
                       aria-current={active ? "true" : undefined}
                       onClick={() => setSection(item.id)}
                       className={cn(
-                        "flex h-9 items-center gap-3 rounded-lg px-2.5 text-sm transition-colors text-left",
+                        "flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-start text-[13.5px] outline-none transition-[background-color,color,box-shadow] focus-visible:ring-3 focus-visible:ring-ring/25 [&>svg]:text-muted-foreground",
                         active
-                          ? "bg-accent text-accent-foreground font-medium"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                          ? "bg-card font-medium text-foreground shadow-xs ring-1 ring-border/70 dark:bg-muted [&>svg]:text-primary"
+                          : "text-foreground/70 hover:bg-muted/70 hover:text-foreground",
                       )}
                     >
                       <Icon className="size-4 shrink-0" />
@@ -323,7 +336,7 @@ export function AccountSettingsDialog({
           {/* Desktop Sign Out */}
           <div className="mt-auto pt-3 border-t border-border/40">
             <Button
-              className="h-9 w-full justify-start gap-3 px-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="w-full justify-start gap-2.5 px-2.5 text-[13.5px] text-foreground/70"
               onClick={() => void handleSignOut()}
               variant="ghost"
             >

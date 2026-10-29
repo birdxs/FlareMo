@@ -77,7 +77,7 @@ export function WorkspacePageHeader({
               to shrink into, so a long title ran under the actions. */}
           <div className="flex min-w-0 items-center gap-2 px-1">
             {icon}
-            <h1 className="min-w-0 truncate font-semibold text-sm sm:text-base leading-none">
+            <h1 className="min-w-0 truncate text-[15px] leading-none font-semibold tracking-tight">
               {title}
             </h1>
           </div>

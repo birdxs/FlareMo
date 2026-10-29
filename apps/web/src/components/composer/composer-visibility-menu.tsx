@@ -99,7 +99,7 @@ export function ComposerVisibilityMenu({
         disabled={isPending || isUploadingImages || !canSubmit || voiceActive}
         size="icon-sm"
         type="submit"
-        variant="brand"
+        variant="gradient"
       >
         {isPending ? (
           <Loader2Icon className="motion-safe:animate-spin" />

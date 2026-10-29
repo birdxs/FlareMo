@@ -1,8 +1,10 @@
-# FlareMo 设计系统(Ember)
+# FlareMo 设计系统（Ember 2）
 
 **产品设计原则：简约不简单，克制不放肆。**
 
-FlareMo 的视觉语言叫 Ember：界面保持安静，暖调中性色承担约 90% 的表面，品牌火焰色（橙 → 珊瑚，取自 logo 渐变）只出现在关键动作和状态上。克制是高级感的主要来源。
+FlareMo 的视觉语言叫 Ember：界面保持安静，暖调中性色承担约 90% 的表面，品牌火焰色只出现在关键动作和状态上。克制是高级感的主要来源。
+
+Ember 2（2026-10）在此基础上收紧了三件事：**墨色是默认、火焰色是强调**（默认按钮、激活的筛选 chip 用墨色，每屏唯一的主 CTA 才用火焰色）；**纸张层级代替彩色高亮**（侧栏/设置的激活项是一张浮起的纸片：卡片底 + 发丝环 + xs 阴影，图标染火焰色，不再整行铺品牌浅底）；**更精确的形状**（圆角整体收小，控件 10px、卡片 14px、弹窗 18px）。
 
 ## 色彩
 
@@ -12,8 +14,8 @@ FlareMo 的视觉语言叫 Ember：界面保持安静，暖调中性色承担约
 - 中性色带暖调（hue 60–80，小 chroma)，不要用纯灰。
 - 语义色：`primary` / `secondary` / `muted` / `accent` / `destructive` / `success` / `warning` / `info` 及各自的 `-foreground`。
 - 状态色有两种文字 token：`-foreground` 只用于**实心底**上的文字（暗色下是深色）；**浅色底（10% 左右 tint）**上的文字用 `success-emphasis` / `warning-emphasis` / `info-emphasis`，两套主题都保证可读。提示条用 `Alert` 的 `warning` / `success` / `info` / `destructive` 变体，状态徽标用 `Badge` 的 `success` / `warning` / `info` 变体；不要再手写 `amber-*` / `emerald-*` / `blue-*` 等原始色板类。原始色板只允许出现在纯装饰处（头像哈希配色、外观设置的主题预览色块）。
-- 品牌渐变 `--gradient-brand`(Tailwind 类 `bg-brand-gradient`）只允许出现在四处：logo、主 CTA（如发送按钮）、置顶标记、选中态指示条。一屏最多一个渐变 CTA。
-- 悬浮/hover 的品牌浅底用 `accent`（亮色 flame-50 / 暗色 flame 深底），不要用冷灰。
+- 品牌渐变 `--gradient-brand`(Tailwind 类 `bg-brand-gradient`）只允许出现在：logo、composer 发送按钮（`Button variant="gradient"`）、置顶记录的内嵌指示条、认证页品牌区的短横线。其余主 CTA 一律用实色 `brand`。
+- hover 用暖调 `muted`；`accent`（品牌浅底）只留给少数需要品牌暗示的小面积状态（如铁律开关），不用于导航激活态。
 
 ## 字体与排版
 
@@ -23,7 +25,7 @@ FlareMo 的视觉语言叫 Ember：界面保持安静，暖调中性色承担约
   - **页面大标题 (H1)**：`text-lg sm:text-xl font-semibold tracking-tight`。例外：`WorkspacePageHeader` 是 h-14 吸顶工具栏，标题保持 `text-sm sm:text-base`，与工具栏控件同一视觉重量。
   - **弹窗/区域大标题 (H2)**：`text-base font-semibold tracking-tight`
   - **分组标签 (H3/Label)**：`text-xs font-medium text-muted-foreground`（去除全大写与非拉丁宽字距）
-  - **侧边栏与主导航项**：统一为 `h-9 rounded-lg px-2.5 text-sm`，图标基准尺寸统一为 `size-4 shrink-0`；未激活态为 `text-muted-foreground hover:bg-muted hover:text-foreground`，激活态统一使用柔和的 `bg-accent text-accent-foreground font-medium`（主侧边栏与设置页侧边栏统一遵循此规则，严禁设置页使用高饱和实心大橙块或 iOS 仿生五彩图标徽章）。
+  - **侧边栏与设置导航项**：`h-8 rounded-lg px-2.5 text-[13.5px]`，图标 `size-4` 且为 `text-muted-foreground`；未激活 `text-foreground/70 hover:bg-muted/70`；激活为纸片：`bg-card shadow-xs ring-1 ring-border/70 font-medium`，图标转 `text-primary`（暗色用 `bg-muted`）。主侧栏（`NAV_ITEM`/`NAV_ACTIVE`）、标签树、设置侧栏共用这一套，严禁实心大橙块或五彩图标徽章。
   - **正文与描述**：笔记正文 15px / leading-7(`.memo-markdown` 已固化）；UI 说明文案 `text-sm leading-relaxed`。
   - **辅助信息/时间戳/徽标**：`text-xs`，严禁低于 12px 的翻译文本。
 - **字号下限：12px（`text-xs`）用于一切会被翻译的文案。** 10px/11px 只允许承载纯数字、计数徽标与键盘符号（`<kbd>` 里的 `↑↓` / `↵` / `esc`）——汉字在 12px 以下笔画开始粘连，而中文是主力语言，这条是硬线（`typography.test.ts` 会扫源码拦截）。
@@ -31,7 +33,7 @@ FlareMo 的视觉语言叫 Ember：界面保持安静，暖调中性色承担约
 
 ## 形状与层级
 
-- 圆角基准 `--radius: 0.875rem`（与 KOSX 家族对齐，见提交 `1b4d0e2e`），阶梯按倍数推导：`md` ≈ 11px（小控件、菜单项、tooltip）、`lg` 14px（按钮 / 输入框 / 下拉 / 浮层）、`xl` ≈ 20px（卡片、Dialog、设置分组）；小尺寸按钮（`sm` / `xs`）圆角随高度收小，标签 chip 全圆角。
+- 圆角基准 `--radius: 0.625rem`（Ember 2 从 0.875 收紧），阶梯按倍数推导：`md` 8px（sm/xs 按钮、菜单项、日历格）、`lg` 10px（按钮、输入框、下拉）、`xl` 14px（卡片、记录卡、设置分组）、`2xl` 18px（Dialog、AlertDialog）；筛选 chip 全圆角，标签 chip 用 `rounded-md`。
 - 层级规则：页面 `bg-background` → 卡片 `bg-card + shadow-xs` → 浮层 `bg-popover + shadow-lg`（DropdownMenu、AlertDialog、composer 建议列表、Spotlight 统一 `shadow-lg` + 发丝线）。`shadow-2xs` / `shadow-xl` / `shadow-2xl` 已在 `@theme` 中别名到暖调阶梯（2xs→xs，xl/2xl→lg），暗色下同样归零；不要再引入 Tailwind 默认的冷黑阴影。亮色模式用暖调阴影（`--shadow-xs/sm/md/lg`)；暗色模式不用阴影表达层级——`.dark` 的 shadow token 置近零，靠表面明度阶梯（实测值 0.155 / 0.21 / 0.235）+ 发丝线区分层级。
 - 分隔用发丝线 `border-border/60`，不要用粗重边框。
 
@@ -48,6 +50,14 @@ token:`animate-rise`(200ms expo 入场）、`animate-fade`(140ms)、`animate-sca
 - 不要在组件里写内联 `animate-[...]` 魔法字符串，统一用上面的 token。
 
 ## 组件约定
+
+- **Button 变体**：`default` 墨色实底（通用主操作）；`brand` 火焰色实底 + 顶部内高光（每屏唯一的主 CTA，如登录、保存记录）；`gradient` 仅 composer 发送；`outline` 卡片底 + 输入框描边；`ghost` / `secondary` / `destructive` / `link`。
+- **统一焦点环**：所有控件 `focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/25`（输入类用 `/20`），禁用统一 `opacity-45` + `pointer-events-none`。
+- **输入类**（Input / Textarea / Select / InputGroup）：`bg-card` + `border-input`（比发丝线深一级）+ `shadow-xs`，hover 描边加深。
+- **FilterPill**：未激活为卡片底 + 发丝线，激活为墨色实底。
+- **标签 chip**：阅读面上用 `Badge variant="tag"`（中性 muted 底），不再用品牌浅底；编辑器内的 `#tag` 输入高亮仍用品牌色。
+- **记录卡**：实色卡片底 + `shadow-xs`，hover 只加深描边与阴影，不位移。
+- **日历热力图**：无记录的日期不铺底色；热度用 primary 的 12% / 24% / 45% / 实色四档；选中是墨色细环，今日用字重 + 下方小圆点。
 
 - 基于 shadcn(radix-nova)+ cva，新组件先进 `apps/web/src/components/ui/`。
 - `Button` 的 `brand` 变体是渐变 CTA，一屏最多一个；`Badge` 的 `flame` 变体用于标签 chip。

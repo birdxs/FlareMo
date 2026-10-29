@@ -15,6 +15,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { memo, useMemo, useState } from "react";
 import { getHourlyActivity, getMemoStats, listMemos } from "@/api";
+import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n";
 import {
   addMonths,
@@ -269,7 +270,7 @@ export const FlareMoTimeHorizon = memo(function FlareMoTimeHorizon({
             they swap which calendar body renders — so `role="tab"` promised a
             panel association that did not exist. `aria-pressed` says the same
             thing on a real button without inventing the relationship. */}
-        <div className="flex items-center gap-0.5 rounded-lg border border-border/60 bg-muted/40 p-0.5 dark:border-border/40 dark:bg-muted/30">
+        <div className="flex items-center gap-0.5 rounded-lg bg-muted p-0.5 dark:bg-muted/60">
           {(
             [
               ["year", t("explorer.tab.year")],
@@ -282,9 +283,9 @@ export const FlareMoTimeHorizon = memo(function FlareMoTimeHorizon({
               aria-label={`${t("explorer.timeViewLabel")}: ${label}`}
               aria-pressed={tab === id}
               className={cn(
-                "min-w-[30px] rounded px-2 py-0.5 text-xs font-medium tabular-nums transition-colors cursor-pointer",
+                "h-6 min-w-[34px] cursor-pointer rounded-md px-2 text-xs font-medium outline-none transition-[color,background-color,box-shadow] focus-visible:ring-3 focus-visible:ring-ring/25",
                 tab === id
-                  ? "bg-background text-foreground shadow-2xs font-semibold"
+                  ? "bg-card text-foreground shadow-xs dark:bg-input/40"
                   : "text-muted-foreground hover:text-foreground",
               )}
               key={id}
@@ -298,43 +299,48 @@ export const FlareMoTimeHorizon = memo(function FlareMoTimeHorizon({
 
         {/* Quick Return to Today when navigated away */}
         {isAwayFromToday ? (
-          <button
+          <Button
             aria-label={t("explorer.backToToday")}
-            className="rounded-md border border-border/60 bg-background/80 px-2 py-0.5 text-xs font-medium text-foreground/80 shadow-2xs transition-colors hover:border-brand-500/50 hover:bg-background hover:text-brand-600 dark:border-border/40 dark:bg-muted/30 dark:hover:text-brand-400 cursor-pointer"
-            type="button"
             onClick={handleJumpToday}
+            size="xs"
+            type="button"
+            variant="outline"
           >
             {t("explorer.today")}
-          </button>
+          </Button>
         ) : null}
       </div>
 
       {/* ── Range Navigator ────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-1">
-        <button
+        <Button
           aria-label={t("explorer.previousPeriod")}
-          className="rounded p-1 text-foreground/70 hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
-          type="button"
+          className="text-muted-foreground rtl:rotate-180"
           onClick={handlePrev}
+          size="icon-xs"
+          type="button"
+          variant="ghost"
         >
-          <ChevronLeftIcon className="size-3.5" />
-        </button>
+          <ChevronLeftIcon />
+        </Button>
         <span className="text-xs font-semibold text-foreground">
           {rangeTitle}
         </span>
-        <button
+        <Button
           aria-label={t("explorer.nextPeriod")}
-          className="rounded p-1 text-foreground/70 hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
-          type="button"
+          className="text-muted-foreground rtl:rotate-180"
           onClick={handleNext}
+          size="icon-xs"
+          type="button"
+          variant="ghost"
         >
-          <ChevronRightIcon className="size-3.5" />
-        </button>
+          <ChevronRightIcon />
+        </Button>
       </div>
 
       {/* ── Unified High-Impact Canvas Container (~240px Tall) ─────────────── */}
       <div
-        className="relative flex min-h-[238px] flex-col justify-center rounded-xl border border-border/70 bg-muted/30 p-2.5 shadow-2xs dark:border-border/50 dark:bg-muted/20 overflow-hidden"
+        className="relative flex min-h-[238px] flex-col justify-center overflow-hidden rounded-xl border border-border/60 bg-card p-2.5 shadow-xs"
         data-testid="activity-heatmap"
       >
         <div

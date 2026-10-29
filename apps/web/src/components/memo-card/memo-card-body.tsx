@@ -126,20 +126,20 @@ export function MemoCardBody({
               onTagClick ? (
                 <button
                   aria-label={`#${tag}`}
-                  className="cursor-pointer rounded-full motion-safe:transition-transform motion-safe:duration-150 motion-safe:hover:-translate-y-px"
+                  className="group/tag cursor-pointer rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/25"
                   key={tag}
                   type="button"
                   onClick={() => onTagClick(tag)}
                 >
                   <Badge
-                    className="transition-colors hover:bg-brand-200 dark:hover:bg-brand-400/20"
-                    variant="brand"
+                    className="group-hover/tag:bg-[color-mix(in_oklch,var(--muted),var(--foreground)_7%)] group-hover/tag:text-foreground"
+                    variant="tag"
                   >
                     #{tag}
                   </Badge>
                 </button>
               ) : (
-                <Badge key={tag} variant="brand">
+                <Badge key={tag} variant="tag">
                   #{tag}
                 </Badge>
               ),
