@@ -9,6 +9,7 @@ import {
   FootprintsIcon,
   HashIcon,
   LayoutGridIcon,
+  ListChecksIcon,
   MicIcon,
   PencilIcon,
   Trash2Icon,
@@ -216,21 +217,21 @@ export const FlareMoExplorer = memo(function FlareMoExplorer({
           activeProps={NAV_ACTIVE}
           className={NAV_ITEM}
           onClick={onNavigate}
+          to="/projects"
+        >
+          <ListChecksIcon />
+          <span className="min-w-0 flex-1 truncate">{t("nav.projects")}</span>
+        </Link>
+        <Link
+          activeProps={NAV_ACTIVE}
+          className={NAV_ITEM}
+          onClick={onNavigate}
           to="/team-projects"
         >
           <FolderKanbanIcon />
           <span className="min-w-0 flex-1 truncate">
             {t("nav.teamProjects")}
           </span>
-        </Link>
-        <Link
-          activeProps={NAV_ACTIVE}
-          className={NAV_ITEM}
-          onClick={onNavigate}
-          to="/projects"
-        >
-          <FolderKanbanIcon />
-          <span className="min-w-0 flex-1 truncate">{t("nav.projects")}</span>
         </Link>
         <Link
           activeProps={NAV_ACTIVE}

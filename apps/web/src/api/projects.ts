@@ -95,6 +95,33 @@ export async function listTasks(
   );
 }
 
+/**
+ * Every live task matching the filter, following the cursor. A single page
+ * holds 30 rows by default, which silently dropped tasks from the board, the
+ * reminders and the memo badges once a user had more than that. Capped at
+ * 2 000 rows (20 full pages) so a runaway cursor cannot loop forever.
+ */
+export async function listAllTasks(
+  params: Omit<
+    Parameters<typeof listTasks>[0],
+    "page_token" | "page_size"
+  > = {},
+) {
+  const tasks: Task[] = [];
+  let pageToken: string | undefined;
+  for (let page = 0; page < 20; page += 1) {
+    const result = await listTasks({
+      ...params,
+      page_size: 100,
+      page_token: pageToken,
+    });
+    tasks.push(...result.tasks);
+    pageToken = result.next_page_token;
+    if (!pageToken) break;
+  }
+  return { tasks };
+}
+
 // A project-scoped sort: assigns `sort_order` = list index to every id given.
 export async function reorderTasks(projectId: string, taskIds: string[]) {
   return apiRequest<{ tasks: Task[] }>("/api/app/tasks/reorder", {

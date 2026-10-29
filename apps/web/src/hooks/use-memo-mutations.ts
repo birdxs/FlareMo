@@ -57,6 +57,9 @@ export function useMemoMutations() {
       queryClient.invalidateQueries({ queryKey: queryKeys.tagHierarchy.all }),
       queryClient.invalidateQueries({ queryKey: ["memo-context"] }),
       queryClient.invalidateQueries({ queryKey: ["memo-related"] }),
+      // Ticking a to-do line moves the task scheduled from it (server-side),
+      // so the board and the memo badges must re-read.
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all }),
     ]);
 
   const handleMutationError = (error: unknown) => {

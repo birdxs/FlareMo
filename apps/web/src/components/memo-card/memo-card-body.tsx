@@ -14,6 +14,7 @@ import { extractTags } from "@/lib/memo";
 import { countTaskItems } from "@/lib/memo-tasks";
 import { cn } from "@/lib/utils";
 import { stateLabel } from "./memo-card-badges";
+import { MemoTaskBadge, useMemoTasks } from "./memo-task-badge";
 import type { MemoTaskInteraction } from "./use-memo-card-actions";
 
 /** Bodies beyond this size collapse in the timeline. */
@@ -73,6 +74,9 @@ export function MemoCardBody({
     [attachments],
   );
   const taskCount = useMemo(() => countTaskItems(memo.content), [memo.content]);
+  // Only the author holds the tasks a memo filed; other readers skip the
+  // task cache entirely.
+  const memoTasks = useMemoTasks(memo.name, canManage);
 
   return (
     <>
@@ -119,7 +123,7 @@ export function MemoCardBody({
           </div>
         )}
       </div>
-      {(tags.length > 0 || memo.state !== "normal") && (
+      {(tags.length > 0 || memo.state !== "normal" || memoTasks.length > 0) && (
         <footer className="flex flex-wrap items-center justify-between gap-2 pt-1">
           <div className="flex flex-wrap gap-1.5">
             {tags.map((tag) =>
@@ -145,7 +149,8 @@ export function MemoCardBody({
               ),
             )}
           </div>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex min-w-0 items-center gap-2">
+            <MemoTaskBadge tasks={memoTasks} />
             {memo.state !== "normal" && (
               <Badge variant="outline">{stateLabel(memo.state, t)}</Badge>
             )}

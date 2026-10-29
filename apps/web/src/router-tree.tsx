@@ -13,13 +13,12 @@ import {
   listArticles,
   listMemories,
   listProjects,
-  listTasks,
 } from "@/api";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { isRtlLocale, useI18n } from "@/i18n";
 import { todayKey } from "@/lib/calendar-date";
-import { queryKeys } from "@/lib/query-keys";
+import { allTasksQuery, isTaskView, type TaskView } from "@/lib/task-views";
 import { AuthenticatedRoute } from "@/routes/authenticated-route";
 import { indexRoute } from "@/routes/index-route";
 import { rootRoute } from "@/routes/root-route";
@@ -417,6 +416,17 @@ function ProjectsRoutePage() {
 const projectsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/projects",
+  // A to-do view (today / upcoming / all) or one project, so reminders and
+  // memo badges can deep-link to the exact list.
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { view?: TaskView; project?: string } => ({
+    view: isTaskView(search.view) ? search.view : undefined,
+    project:
+      typeof search.project === "string" && search.project
+        ? search.project
+        : undefined,
+  }),
   component: ProjectsRoutePage,
   loader: ({ context }) => {
     warmQuery(
@@ -426,12 +436,7 @@ const projectsRoute = createRoute({
       }),
     );
     // Same key as the board's default all-tasks view and the mini calendar.
-    warmQuery(
-      context.queryClient.ensureQueryData({
-        queryKey: queryKeys.tasks.all,
-        queryFn: () => listTasks(),
-      }),
-    );
+    warmQuery(context.queryClient.ensureQueryData(allTasksQuery));
   },
 });
 

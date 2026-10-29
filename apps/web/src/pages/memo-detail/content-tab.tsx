@@ -1,5 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import type { MemoContext, RelatedMemo } from "@/api";
+import {
+  MemoTaskBadge,
+  useMemoTasks,
+} from "@/components/memo-card/memo-task-badge";
 import { MemoReadingView } from "@/components/reading/memo-reading-view";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,8 +31,15 @@ export function ContentTab({
   taskInteraction: MemoDetailTaskInteraction | undefined;
 }) {
   const { t } = useI18n();
+  // Tasks are the author's; the interaction exists only for them.
+  const memoTasks = useMemoTasks(context.memo.name, Boolean(taskInteraction));
   return (
     <TabsContent className="flex flex-col gap-5 pt-4" value="content">
+      {memoTasks.length > 0 && (
+        <div className="flex">
+          <MemoTaskBadge tasks={memoTasks} />
+        </div>
+      )}
       <MemoReadingView
         attachments={context.attachments}
         content={context.memo.content}

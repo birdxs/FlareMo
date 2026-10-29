@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { getDailyReview, listMemos, type Memo } from "@/api";
 import { MemoSnapshotCard } from "@/components/memo-snapshot-card";
 import { QueryErrorState } from "@/components/query-error-state";
+import { TodayTasks } from "@/components/today-tasks";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -81,6 +82,7 @@ export function DailyReviewPage() {
       )}
     >
       <div className="flex flex-col gap-4 py-2">
+        <TodayTasks />
         {isInitialLoading && (
           <div className="flex flex-col gap-3">
             <Skeleton className="h-6 w-32" />

@@ -51,6 +51,7 @@ export function Board({
   onMutated,
   onCreateProject,
   onCreateTask,
+  emptyState,
 }: {
   hasError: boolean;
   hasProjects: boolean;
@@ -63,6 +64,8 @@ export function Board({
   onMutated: () => void;
   onCreateProject: () => void;
   onCreateTask: () => void;
+  /** A smart view's own empty copy; the quick-add line above is its CTA. */
+  emptyState?: { title: string; description: string };
 }) {
   const { t } = useI18n();
 
@@ -83,6 +86,17 @@ export function Board({
         isRetrying={isRetrying}
         onRetry={onRetry}
       />
+    );
+  }
+
+  if (tasks.length === 0 && emptyState) {
+    return (
+      <Empty className="min-h-56 border">
+        <EmptyHeader>
+          <EmptyTitle>{emptyState.title}</EmptyTitle>
+          <EmptyDescription>{emptyState.description}</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 

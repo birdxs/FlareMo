@@ -8,7 +8,6 @@ import {
   getTagHierarchy,
   getVectorUsage,
   listMemos,
-  listTasks,
   type MemoSpace,
   type MemoStatsResponse,
   semanticSearchMemos,
@@ -18,6 +17,7 @@ import type { ExplorerView as ViewMode } from "@/components/flaremo-explorer";
 import { todayKey } from "@/lib/calendar-date";
 import { viewToMemoState } from "@/lib/memo-cache";
 import { queryKeys } from "@/lib/query-keys";
+import { useAllTasks } from "@/lib/task-views";
 import { ACTIVITY_WINDOW_DAYS } from "@/lib/time-horizon";
 
 const PAGE_SIZE = 30;
@@ -106,11 +106,7 @@ export function useWorkspaceQueries({
   // Plain keyword search rides the memos endpoint; tasks join the results
   // client-side from the shared ["tasks"] cache (title/notes substring match).
   const keywordSearch = isSearching && !dayFilter && !isSemanticSearch;
-  const taskSearchQuery = useQuery({
-    queryKey: queryKeys.tasks.all,
-    queryFn: () => listTasks(),
-    enabled: keywordSearch,
-  });
+  const taskSearchQuery = useAllTasks({ enabled: keywordSearch });
   const matchingTasks = useMemo(() => {
     if (!keywordSearch) return [] as Task[];
     const needle = searchQuery.toLocaleLowerCase();
