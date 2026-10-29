@@ -126,7 +126,12 @@ export function ComposerToolbar({
       <ToolButton
         disabled={isPending}
         label={t("composer.addAttachment")}
-        render={<label htmlFor="flaremo-attachment-input" />}
+        render={
+          <label
+            aria-label={t("composer.addAttachment")}
+            htmlFor="flaremo-attachment-input"
+          />
+        }
       >
         <ImagePlusIcon />
         <Input

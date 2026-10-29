@@ -100,12 +100,12 @@ export function ComposerVisibilityMenu({
       {/* Shortcut hint, outside the button so its accessible name stays
           exactly "Send". Appears only once there is something to send. */}
       {canSubmit && !isPending && (
-        <kbd
+        <span
           aria-hidden="true"
           className="pointer-events-none hidden items-center gap-0.5 font-sans text-xs text-muted-foreground/70 select-none motion-safe:animate-fade md:inline-flex"
         >
           {SUBMIT_HINT}
-        </kbd>
+        </span>
       )}
       {/* The round send is the composer's one flame: a quiet grey disc while
           there is nothing to send, lit with the brand gradient once there is.
