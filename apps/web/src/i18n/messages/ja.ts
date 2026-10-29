@@ -1213,6 +1213,7 @@ const messages = {
   "admin.pageNext": "次へ",
   "composer.orderedList": "番号付きリスト",
   "composer.insertDate": "日付を挿入",
+  "composer.wikiLink": "メモをリンク",
   "composer.fullscreen.open": "全画面表示",
   "composer.fullscreen.close": "全画面を閉じる (Esc)",
   "composer.fullscreen.wordCount": "{count} 文字",

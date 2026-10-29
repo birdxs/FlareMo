@@ -1,5 +1,5 @@
 import type { Editor } from "@tiptap/react";
-import { Suspense, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import type { MemoVisibility } from "@/api";
 import { ComposerFileChips } from "@/components/composer/composer-file-chips";
 import { ComposerFocusCanvas } from "@/components/composer/composer-focus-canvas-lazy";
@@ -64,12 +64,24 @@ export function MemoComposer({
 }: MemoComposerProps) {
   const { t } = useI18n();
   const editorRef = useRef<Editor | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
   const canSubmit = Boolean(draft.content.trim() || draft.files.length > 0);
   // Idle state shrinks to one line (flomo-style): unfocused and empty. Focus
   // or any content expands the editor back to full height.
   const [isComposerFocused, setIsComposerFocused] = useState(false);
   const isCompact = !isComposerFocused && !canSubmit && !isPending;
+  // Sending locks the editor (contenteditable=false), which blurs it. That
+  // blur is not the author leaving: keep the box expanded and hand the caret
+  // back once the send settles, so the next note can be typed straight away.
+  const isPendingRef = useRef(isPending);
+  isPendingRef.current = isPending;
+  const refocusAfterSendRef = useRef(false);
+  useEffect(() => {
+    if (isPending || !refocusAfterSendRef.current) return;
+    refocusAfterSendRef.current = false;
+    editorRef.current?.commands.focus("end");
+  }, [isPending]);
   // Uploads read the latest draft through a ref: the async chain would
   // otherwise insert into a stale closure while the user keeps typing.
   const draftRef = useRef(draft);
@@ -110,13 +122,22 @@ export function MemoComposer({
   const {
     setActiveTagToken,
     setActiveWikiToken,
+    handleSuggestionKeyDown,
+    activeIndex: suggestionIndex,
+    setActiveIndex: setSuggestionIndex,
+    anchor: suggestionAnchor,
     tagSuggestions,
     showTagSuggestions,
     acceptTagSuggestion,
     wikiSuggestions,
     showWikiSuggestions,
     acceptWikiSuggestion,
-  } = useComposerSuggestions({ editorRef, isPending, tags });
+  } = useComposerSuggestions({
+    editorRef,
+    containerRef: formRef,
+    isPending,
+    tags,
+  });
 
   const { capture, captureController, voiceActive, now } = useComposerVoice({
     draftRef,
@@ -130,6 +151,9 @@ export function MemoComposer({
     if (!canSubmit || isUploadingImages || voiceActive) {
       return;
     }
+    refocusAfterSendRef.current = Boolean(
+      formRef.current?.contains(document.activeElement),
+    );
     try {
       await onSubmit(draft);
     } catch {
@@ -148,11 +172,14 @@ export function MemoComposer({
       className="paper group relative flex w-full flex-col rounded-xl border border-border/80 bg-card shadow-xs motion-safe:animate-rise motion-safe:transition-[border-color,box-shadow] motion-safe:duration-200 focus-within:border-[color-mix(in_oklch,var(--input),var(--foreground)_10%)] focus-within:shadow-md"
       data-compact={isCompact ? "true" : undefined}
       onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) {
-          setIsComposerFocused(false);
-        }
+        if (event.currentTarget.contains(event.relatedTarget)) return;
+        // Focus moving somewhere real means the author left on purpose.
+        if (event.relatedTarget) refocusAfterSendRef.current = false;
+        if (isPendingRef.current && !event.relatedTarget) return;
+        setIsComposerFocused(false);
       }}
       onFocus={() => setIsComposerFocused(true)}
+      ref={formRef}
       onSubmit={(event) => {
         event.preventDefault();
         void submit();
@@ -168,6 +195,7 @@ export function MemoComposer({
           onImageFiles={enqueueInlineUploads}
           onTagTokenChange={tags ? setActiveTagToken : undefined}
           onWikiLinkTokenChange={setActiveWikiToken}
+          onSuggestionKeyDown={handleSuggestionKeyDown}
           onSubmitRequest={() => {
             if (!isUploadingImages && !voiceActive) void submit();
           }}
@@ -185,12 +213,18 @@ export function MemoComposer({
       <ComposerTagSuggestions
         visible={showTagSuggestions}
         suggestions={tagSuggestions}
+        activeIndex={suggestionIndex}
+        anchor={suggestionAnchor}
         onAccept={acceptTagSuggestion}
+        onHighlight={setSuggestionIndex}
       />
       <ComposerWikiSuggestions
         visible={showWikiSuggestions}
         suggestions={wikiSuggestions}
+        activeIndex={suggestionIndex}
+        anchor={suggestionAnchor}
         onAccept={acceptWikiSuggestion}
+        onHighlight={setSuggestionIndex}
       />
       <ComposerFileChips
         files={draft.files}
@@ -203,12 +237,13 @@ export function MemoComposer({
       />
       <div className="flex h-11 items-center justify-between gap-2 rounded-b-xl border-t border-border/50 px-2.5 motion-safe:transition-colors group-data-[compact=true]:border-transparent">
         <ComposerToolbar
-          draft={draft}
           isPending={isPending}
           voiceActive={voiceActive}
           captureAvailable={captureAvailable}
           withEditor={withEditor}
-          onDraftChange={onDraftChange}
+          onAddFiles={(files) =>
+            commitDraft({ files: [...draftRef.current.files, ...files] })
+          }
           onStartVoice={() => void captureController.start()}
           onExpand={
             onSubmitArticle ? () => setIsFullscreenOpen(true) : undefined

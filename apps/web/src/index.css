@@ -911,6 +911,19 @@ svg.lucide[stroke-width="2"] {
     @apply text-muted-foreground line-through;
   }
 
+  /* Links read as links while writing, same ink as the reading view. The
+     editor does not follow them on click (openOnClick: false), so the
+     pointer stays a text caret. */
+  .composer-editor-content a,
+  .article-editor-content a {
+    @apply cursor-text font-medium text-brand-600 underline decoration-brand-400/40 underline-offset-4 dark:text-brand-300;
+  }
+
+  .composer-editor-content hr,
+  .article-editor-content hr {
+    @apply my-4 border-border/60;
+  }
+
   /* `#tag` chips are a typing-time decoration; storage keeps plain text. */
   .composer-tag {
     @apply rounded bg-brand-500/10 px-0.5 font-medium text-brand-600 dark:text-brand-300;

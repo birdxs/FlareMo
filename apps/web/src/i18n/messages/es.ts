@@ -1227,6 +1227,7 @@ const messages = {
   "admin.pageNext": "Siguiente",
   "composer.orderedList": "Lista numerada",
   "composer.insertDate": "Insertar fecha",
+  "composer.wikiLink": "Enlazar una nota",
   "composer.fullscreen.open": "Pantalla completa",
   "composer.fullscreen.close": "Salir de pantalla completa (Esc)",
   "composer.fullscreen.wordCount": "{count} palabras",

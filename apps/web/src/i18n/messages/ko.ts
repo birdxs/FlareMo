@@ -1204,6 +1204,7 @@ const messages = {
   "admin.pageNext": "다음",
   "composer.orderedList": "번호 매기기 목록",
   "composer.insertDate": "날짜 삽입",
+  "composer.wikiLink": "메모 연결",
   "composer.fullscreen.open": "전체 화면",
   "composer.fullscreen.close": "전체 화면 닫기 (Esc)",
   "composer.fullscreen.wordCount": "{count}자",

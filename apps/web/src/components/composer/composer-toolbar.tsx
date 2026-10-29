@@ -19,7 +19,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useI18n } from "@/i18n";
-import type { MemoCaptureInput } from "@/lib/local-memo-capture";
+import { todayKey } from "@/lib/calendar-date";
 import { cn } from "@/lib/utils";
 
 /**
@@ -85,21 +85,24 @@ function ToolDivider() {
  * submission is pending.
  */
 export function ComposerToolbar({
-  draft,
   isPending,
   voiceActive,
   captureAvailable,
   withEditor,
-  onDraftChange,
+  onAddFiles,
   onStartVoice,
   onExpand,
 }: {
-  draft: MemoCaptureInput;
   isPending: boolean;
   voiceActive: boolean;
   captureAvailable: boolean;
   withEditor: (action: (editor: Editor) => void) => void;
-  onDraftChange: (draft: MemoCaptureInput) => void;
+  /**
+   * Files picked through the attachment button. The caller appends them to
+   * its latest draft (not a render-time copy), so an inline upload landing in
+   * between is never overwritten.
+   */
+  onAddFiles: (files: File[]) => void;
   /** Starts a session; the caller owns the controller. */
   onStartVoice: () => void;
   /** Opens fullscreen focus canvas. */
@@ -144,10 +147,7 @@ export function ComposerToolbar({
             const files = Array.from(event.target.files ?? []);
             event.target.value = "";
             if (files.length === 0) return;
-            onDraftChange({
-              ...draft,
-              files: [...draft.files, ...files],
-            });
+            onAddFiles(files);
           }}
         />
       </ToolButton>
@@ -191,7 +191,7 @@ export function ComposerToolbar({
         label={t("composer.insertDate")}
         onClick={() =>
           withEditor((editor) => {
-            const today = new Date().toISOString().slice(0, 10);
+            const today = todayKey();
             editor.chain().focus().insertContent(`${today} `).run();
           })
         }

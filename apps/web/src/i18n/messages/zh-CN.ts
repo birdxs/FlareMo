@@ -1127,6 +1127,7 @@ const messages = {
   "admin.pageNext": "下一页",
   "composer.orderedList": "有序列表",
   "composer.insertDate": "插入日期",
+  "composer.wikiLink": "引用笔记",
   "composer.fullscreen.open": "全屏写作",
   "composer.fullscreen.close": "收起全屏 (Esc)",
   "composer.fullscreen.wordCount": "{count} 字",

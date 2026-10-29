@@ -1179,6 +1179,7 @@ const messages = {
   "admin.pageNext": "التالي",
   "composer.orderedList": "قائمة مرقمة",
   "composer.insertDate": "إدراج التاريخ",
+  "composer.wikiLink": "ربط ملاحظة",
   "composer.fullscreen.open": "ملء الشاشة",
   "composer.fullscreen.close": "الخروج من ملء الشاشة (Esc)",
   "composer.fullscreen.wordCount": "{count} كلمة",

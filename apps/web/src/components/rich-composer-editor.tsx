@@ -3,7 +3,6 @@ import Image from "@tiptap/extension-image";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Markdown } from "@tiptap/markdown";
-import type { EditorView } from "@tiptap/pm/view";
 import { type Editor, EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useRef } from "react";
@@ -65,11 +64,11 @@ export type RichComposerEditorProps = {
     token: { from: number; query: string } | null,
   ) => void;
   /**
-   * When on (composer behavior) Shift+Enter submits the note — Enter is the
-   * paragraph break, Cmd/Ctrl+Enter works as a fallback. Turn off for the card
-   * inline editor, where Enter keeps editing and Cmd/Ctrl+Enter saves.
+   * Keyboard hook for an open autocomplete list. Runs before every other key
+   * binding; return true to consume the key (↑/↓/Enter/Tab/Esc while a list
+   * is open), false to let the editor handle it.
    */
-  submitOnEnter?: boolean;
+  onSuggestionKeyDown?: (event: KeyboardEvent) => boolean;
   /** Escape exits editing (card inline editor). */
   onEscape?: () => void;
   /** Move the caret to the end right after mount. */
@@ -95,19 +94,6 @@ export type RichComposerEditorProps = {
 };
 
 /**
- * True when the caret sits inside a bullet/ordered/task list item: pressing
- * Enter there grows the list instead of submitting the memo.
- */
-function caretInListItem(view: EditorView): boolean {
-  const { $from } = view.state.selection;
-  for (let depth = $from.depth; depth > 0; depth -= 1) {
-    const name = $from.node(depth).type.name;
-    if (name === "listItem" || name === "taskItem") return true;
-  }
-  return false;
-}
-
-/**
  * Bear-style WYSIWYG body of the memo composer. Storage stays plain markdown:
  * the official Markdown extension parses it on the way in and serializes on
  * the way out, so cards, the API, and MCP all keep seeing ordinary GFM text.
@@ -124,7 +110,7 @@ export function RichComposerEditor({
   onSubmitRequest,
   onTagTokenChange,
   onWikiLinkTokenChange,
-  submitOnEnter = true,
+  onSuggestionKeyDown,
   onEscape,
   autoFocus = false,
   editorRef,
@@ -142,6 +128,8 @@ export function RichComposerEditor({
   onImageFilesRef.current = onImageFiles;
   const onSubmitRequestRef = useRef(onSubmitRequest);
   onSubmitRequestRef.current = onSubmitRequest;
+  const onSuggestionKeyDownRef = useRef(onSuggestionKeyDown);
+  onSuggestionKeyDownRef.current = onSuggestionKeyDown;
   const onEscapeRef = useRef(onEscape);
   onEscapeRef.current = onEscape;
   const onTagTokenChangeRef = useRef(onTagTokenChange);
@@ -176,20 +164,21 @@ export function RichComposerEditor({
         class: contentClassName,
       },
       handleKeyDown: (view, event) => {
-        // Enter sends; IME composition and Shift+Enter never submit. Same
-        // contract the textarea era had — except inside a list item, where
-        // Enter must continue the checklist instead of cutting the note off
-        // after its first item.
-        if (
-          event.key !== "Enter" &&
-          event.key !== "Escape" &&
-          event.key !== "Backspace" &&
-          event.keyCode !== 229
-        ) {
-          return false;
+        // Keyboard contract, the same on every surface:
+        //   Enter            new paragraph (or next list item)
+        //   Shift+Enter      soft line break (HardBreak's own binding)
+        //   Cmd/Ctrl+Enter   send / save
+        // An open autocomplete gets first claim on navigation keys, and IME
+        // composition never triggers anything.
+        if (event.isComposing || event.keyCode === 229) return false;
+        if (onSuggestionKeyDownRef.current?.(event)) {
+          // Stop here too: an Esc that closes the list must not also close
+          // the dialog the editor lives in (dismiss listens on document).
+          event.preventDefault();
+          event.stopPropagation();
+          return true;
         }
         if (event.key === "Backspace") {
-          if (event.isComposing) return false;
           const { from, to } = view.state.selection;
           if (from === 1 && to === 1 && onBackspaceAtStartRef.current) {
             const handled = onBackspaceAtStartRef.current();
@@ -198,22 +187,18 @@ export function RichComposerEditor({
           return false;
         }
         if (event.key === "Escape") {
-          if (event.isComposing) return false;
           if (onEscapeRef.current) {
             onEscapeRef.current();
             return true;
           }
           return false;
         }
-        if (event.isComposing || event.keyCode === 229) return false;
-        if (event.metaKey || event.ctrlKey) {
-          onSubmitRequestRef.current();
-          return true;
-        }
-        // Enter keeps editing (the natural paragraph break); Shift+Enter is
-        // the explicit send chord, and Cmd/Ctrl+Enter above still works.
-        // Inside a list item Enter grows the list either way.
-        if (submitOnEnter && event.shiftKey && !caretInListItem(view)) {
+        if (
+          event.key === "Enter" &&
+          (event.metaKey || event.ctrlKey) &&
+          !event.altKey
+        ) {
+          event.preventDefault();
           onSubmitRequestRef.current();
           return true;
         }

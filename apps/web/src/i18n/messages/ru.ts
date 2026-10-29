@@ -1222,6 +1222,7 @@ const messages = {
   "admin.pageNext": "Вперёд",
   "composer.orderedList": "Нумерованный список",
   "composer.insertDate": "Вставить дату",
+  "composer.wikiLink": "Ссылка на заметку",
   "composer.fullscreen.open": "Полноэкранный режим",
   "composer.fullscreen.close": "Выйти из полноэкранного режима (Esc)",
   "composer.fullscreen.wordCount": "{count} сл.",

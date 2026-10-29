@@ -63,6 +63,7 @@ export function ComposerFocusCanvas({
   const { t } = useI18n();
   const canvasEditorRef = useRef<Editor | null>(null);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
+  const editorBoxRef = useRef<HTMLDivElement | null>(null);
   const [manualType, setManualType] = useState<ComposerPublishType | null>(
     null,
   );
@@ -135,13 +136,22 @@ export function ComposerFocusCanvas({
   const {
     setActiveTagToken,
     setActiveWikiToken,
+    handleSuggestionKeyDown,
+    activeIndex: suggestionIndex,
+    setActiveIndex: setSuggestionIndex,
+    anchor: suggestionAnchor,
     tagSuggestions,
     showTagSuggestions,
     acceptTagSuggestion,
     wikiSuggestions,
     showWikiSuggestions,
     acceptWikiSuggestion,
-  } = useComposerSuggestions({ editorRef: canvasEditorRef, isPending, tags });
+  } = useComposerSuggestions({
+    editorRef: canvasEditorRef,
+    containerRef: editorBoxRef,
+    isPending,
+    tags,
+  });
 
   const { capture, captureController, voiceActive, now } = useComposerVoice({
     draftRef,
@@ -243,7 +253,8 @@ export function ComposerFocusCanvas({
               {/* TipTap Fullscreen Editor */}
               {/* biome-ignore lint/a11y/noStaticElementInteractions: Focus editor when clicking blank paper area */}
               <div
-                className="flex flex-1 cursor-text flex-col min-h-0"
+                className="relative flex flex-1 cursor-text flex-col min-h-0"
+                ref={editorBoxRef}
                 onMouseDown={(event) => {
                   if (event.target === event.currentTarget) {
                     event.preventDefault();
@@ -271,6 +282,7 @@ export function ComposerFocusCanvas({
                     onImageFiles={enqueueInlineUploads}
                     onTagTokenChange={tags ? setActiveTagToken : undefined}
                     onWikiLinkTokenChange={setActiveWikiToken}
+                    onSuggestionKeyDown={handleSuggestionKeyDown}
                     onSubmitRequest={() => {
                       if (!isUploadingImages && !voiceActive) void submit();
                     }}
@@ -285,7 +297,6 @@ export function ComposerFocusCanvas({
                       return false;
                     }}
                     placeholder={t("composer.placeholder")}
-                    submitOnEnter={false}
                     autoFocus={true}
                     contentClassName="article-editor-content flex-1 outline-none text-base leading-relaxed py-2"
                   />
@@ -301,12 +312,18 @@ export function ComposerFocusCanvas({
                 <ComposerTagSuggestions
                   visible={showTagSuggestions}
                   suggestions={tagSuggestions}
+                  activeIndex={suggestionIndex}
+                  anchor={suggestionAnchor}
                   onAccept={acceptTagSuggestion}
+                  onHighlight={setSuggestionIndex}
                 />
                 <ComposerWikiSuggestions
                   visible={showWikiSuggestions}
                   suggestions={wikiSuggestions}
+                  activeIndex={suggestionIndex}
+                  anchor={suggestionAnchor}
                   onAccept={acceptWikiSuggestion}
+                  onHighlight={setSuggestionIndex}
                 />
                 <ComposerFileChips
                   files={draft.files}
