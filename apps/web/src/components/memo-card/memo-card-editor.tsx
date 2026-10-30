@@ -77,7 +77,6 @@ export function MemoCardEditor({
             if (!isUploadingInline) void onSave();
           }}
           placeholder={t("composer.placeholder")}
-          submitOnEnter={false}
         />
       </Suspense>
       <div className="flex flex-wrap items-center justify-between gap-2">

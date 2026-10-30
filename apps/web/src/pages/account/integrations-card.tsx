@@ -13,6 +13,7 @@ import {
   saveOauthSettings,
   testEmailSettings,
 } from "@/api";
+import { QueryErrorState } from "@/components/query-error-state";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -121,6 +122,16 @@ export function EmailSettingsCard() {
         <Skeleton className="h-12 w-full rounded-xl" />
         <Skeleton className="h-28 w-full rounded-xl" />
       </div>
+    );
+  }
+
+  // A failed load must not fall through to a form seeded with defaults.
+  if (!config && settingsQuery.isError) {
+    return (
+      <QueryErrorState
+        isRetrying={settingsQuery.isFetching}
+        onRetry={() => void settingsQuery.refetch()}
+      />
     );
   }
 
@@ -435,6 +446,23 @@ export function OauthSettingsCard() {
 
   const isGoogleActive = Boolean(config?.previews?.google?.active);
   const isGithubActive = Boolean(config?.previews?.github?.active);
+  if (!config && settingsQuery.isPending) {
+    return (
+      <div className="flex flex-col gap-3 p-4">
+        <Skeleton className="h-12 w-full rounded-xl" />
+        <Skeleton className="h-28 w-full rounded-xl" />
+      </div>
+    );
+  }
+  // A failed load must not fall through to rows reading "not configured".
+  if (!config && settingsQuery.isError) {
+    return (
+      <QueryErrorState
+        isRetrying={settingsQuery.isFetching}
+        onRetry={() => void settingsQuery.refetch()}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col gap-5">

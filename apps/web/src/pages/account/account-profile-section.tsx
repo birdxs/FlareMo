@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { InfoTip } from "@/components/info-tip";
+import { Alert } from "@/components/ui/alert";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -328,11 +329,7 @@ export function AccountProfileSection({
                 onChange={(event) => setName(event.target.value)}
               />
             </label>
-            {nameError && (
-              <p className="rounded-lg border border-destructive/30 bg-destructive/8 px-3 py-2 text-sm text-destructive">
-                {nameError}
-              </p>
-            )}
+            {nameError && <Alert variant="destructive">{nameError}</Alert>}
             <DialogFooter className="mt-2">
               <Button
                 disabled={updateNameIsPending}
@@ -390,9 +387,7 @@ export function AccountProfileSection({
               </div>
             </label>
             {accountError && (
-              <p className="rounded-lg border border-destructive/30 bg-destructive/8 px-3 py-2 text-sm text-destructive">
-                {accountError}
-              </p>
+              <Alert variant="destructive">{accountError}</Alert>
             )}
             <DialogFooter className="mt-2">
               <Button

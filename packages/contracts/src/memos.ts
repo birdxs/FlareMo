@@ -173,6 +173,8 @@ export const attachmentDtoSchema = z.object({
   update_time: z.string(),
   download_url: z.string(),
   preview_url: z.string(),
+  /** Card-sized WebP preview; absent when none was generated at upload. */
+  thumbnail_url: z.string().optional(),
 });
 
 export const memoDtoSchema = z.object({
@@ -199,6 +201,8 @@ export const memoDtoSchema = z.object({
   // even though they cannot edit them.
   can_govern: z.boolean().optional(),
   attachments: z.array(attachmentDtoSchema).optional(),
+  // Comments under this memo the viewer can read (app timeline only).
+  comment_count: z.number().int().nonnegative().optional(),
 });
 
 export const listMemosResponseSchema = z.object({
@@ -586,6 +590,7 @@ export const appNotificationDtoSchema = z.object({
     "memo_mention",
     "daily_review",
     "task_overdue",
+    "task_due",
   ]),
   status: z.enum(["unread", "archived"]),
   // Task-overdue rows have no memo anchor; memo_snippet carries the title.
@@ -676,3 +681,11 @@ export type TagHierarchyResponse = z.infer<typeof tagHierarchyResponseSchema>;
 export type RenameTagInput = z.infer<typeof renameTagRequestSchema>;
 export type RenameTagResponse = z.infer<typeof renameTagResponseSchema>;
 export type DeleteTagResponse = z.infer<typeof deleteTagResponseSchema>;
+
+// A comment is plain prose under its parent memo; it inherits the parent's
+// visibility, so the request carries only the text.
+export const createMemoCommentSchema = z.object({
+  content: z.string().trim().min(1).max(20_000),
+  client_id: z.string().trim().min(1).max(128).optional(),
+});
+export type CreateMemoCommentRequest = z.infer<typeof createMemoCommentSchema>;

@@ -1,4 +1,4 @@
-import { CAPTURE_MAX_TEXT } from "@flaremo/contracts";
+import { CAPTURE_MAX_TEXT } from "@flaremo/contracts/constants";
 import { Loader2Icon } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import {

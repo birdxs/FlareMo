@@ -404,7 +404,7 @@ export function BrandingCard() {
             className="flex flex-col gap-3"
             onSubmit={(event) => {
               event.preventDefault();
-              void saveNameMutation.mutateAsync();
+              saveNameMutation.mutate();
             }}
           >
             <label
@@ -421,11 +421,6 @@ export function BrandingCard() {
                 onChange={(event) => setProductName(event.target.value)}
               />
             </label>
-            {saveNameMutation.isError && (
-              <p className="rounded-lg border border-destructive/30 bg-destructive/8 px-3 py-2 text-sm text-destructive">
-                {t("admin.branding.failed")}
-              </p>
-            )}
             <DialogFooter>
               <Button
                 disabled={

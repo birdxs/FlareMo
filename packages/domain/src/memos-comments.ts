@@ -1,6 +1,7 @@
 import type { FlareMoDb, MemoPayload, MemoRow, UserRow } from "@flaremo/db";
 import { memoRelations, memos, memoTags } from "@flaremo/db";
 import { and, asc, count, desc, eq, gt, inArray, lt, or } from "drizzle-orm";
+import { chunkForD1, d1IdsPerStatement } from "./d1-limits";
 import {
   ConflictError,
   ForbiddenError,
@@ -318,39 +319,58 @@ export async function getMemoParentsForViewer(
   ];
   if (requested.length === 0) return new Map();
 
-  const readable = await db
-    .select({ id: memos.id })
-    .from(memos)
-    .where(and(inArray(memos.id, requested), memoReadScope(user)));
-  if (readable.length !== requested.length) {
+  // Both reads below are fed by Connect `ListMemoComments`, whose page size
+  // reaches 1000 — well past D1's per-statement binding cap.
+  const readableIds = new Set<string>();
+  for (const idChunk of chunkForD1(requested, d1IdsPerStatement())) {
+    const readable = await db
+      .select({ id: memos.id })
+      .from(memos)
+      .where(and(inArray(memos.id, idChunk), memoReadScope(user)));
+    for (const row of readable) readableIds.add(row.id);
+  }
+  if (readableIds.size !== requested.length) {
     throw new NotFoundError("Memo not found");
   }
 
-  const rows = await db
-    .select({
-      memoId: memoRelations.memoId,
-      relatedMemoId: memoRelations.relatedMemoId,
-    })
-    .from(memoRelations)
-    .where(
-      and(
-        inArray(memoRelations.memoId, requested),
-        eq(memoRelations.type, "comment"),
-      ),
+  const relationRows: Array<{
+    memoId: string;
+    relatedMemoId: string;
+  }> = [];
+  for (const idChunk of chunkForD1(requested, d1IdsPerStatement(2))) {
+    relationRows.push(
+      ...(await db
+        .select({
+          memoId: memoRelations.memoId,
+          relatedMemoId: memoRelations.relatedMemoId,
+        })
+        .from(memoRelations)
+        .where(
+          and(
+            inArray(memoRelations.memoId, idChunk),
+            eq(memoRelations.type, "comment"),
+          ),
+        )),
     );
-  if (rows.length === 0) return new Map();
+  }
+  if (relationRows.length === 0) return new Map();
 
-  const parentIds = [...new Set(rows.map((row) => row.relatedMemoId))];
-  const readableParents = await db
-    .select({ id: memos.id })
-    .from(memos)
-    .where(and(inArray(memos.id, parentIds), memoReadScope(user)));
-  const readableParentIds = new Set(readableParents.map((row) => row.id));
+  const parentIds = [...new Set(relationRows.map((row) => row.relatedMemoId))];
+  const readableParentIds = new Set<string>();
+  for (const idChunk of chunkForD1(parentIds, d1IdsPerStatement())) {
+    const readable = await db
+      .select({ id: memos.id })
+      .from(memos)
+      .where(and(inArray(memos.id, idChunk), memoReadScope(user)));
+    for (const row of readable) readableParentIds.add(row.id);
+  }
   if (readableParentIds.size !== parentIds.length) {
     throw new NotFoundError("Memo not found");
   }
 
-  return new Map(rows.map((row) => [row.memoId, row.relatedMemoId] as const));
+  return new Map(
+    relationRows.map((row) => [row.memoId, row.relatedMemoId] as const),
+  );
 }
 
 export function listMemoComments(
@@ -498,4 +518,42 @@ function normalizeCommentOrder(value: string | undefined) {
     throw new ValidationError("Unsupported comment order_by");
   }
   return `${field} ${direction}`;
+}
+
+/**
+ * Live comment counts for a page of parent memos, keyed by parent id
+ * (`memos/<id>`). Only comments the viewer can read are counted, with the
+ * same boundary as {@link listMemoComments}, so the number on a card always
+ * matches the list the detail page shows. Parents without comments are
+ * absent from the map.
+ */
+export async function countMemoComments(
+  db: FlareMoDb,
+  user: UserRow,
+  parentIds: string[],
+): Promise<Map<string, number>> {
+  const ids = [
+    ...new Set(parentIds.map((id) => parseResourceName(id, "memos"))),
+  ];
+  const counts = new Map<string, number>();
+  for (const idChunk of chunkForD1(ids, d1IdsPerStatement(4))) {
+    const rows = await db
+      .select({
+        parentId: memoRelations.relatedMemoId,
+        total: count(memos.id),
+      })
+      .from(memoRelations)
+      .innerJoin(memos, eq(memos.id, memoRelations.memoId))
+      .where(
+        and(
+          inArray(memoRelations.relatedMemoId, idChunk),
+          eq(memoRelations.type, "comment"),
+          inArray(memos.status, ["normal", "archived"]),
+          memoReadScope(user),
+        ),
+      )
+      .groupBy(memoRelations.relatedMemoId);
+    for (const row of rows) counts.set(row.parentId, row.total);
+  }
+  return counts;
 }

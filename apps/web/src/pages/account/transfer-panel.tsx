@@ -85,9 +85,8 @@ export function TransferPanel({
                             ? "destructive"
                             : "outline"
                       }
-                      className="text-[10px] h-4 px-1.5"
                     >
-                      {task.status}
+                      {t(`transfer.status.${task.status}`)}
                     </Badge>
                   </div>
                   <p className="truncate text-xs text-muted-foreground mt-0.5">
